@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FF14 仙人微彩計算器 - 完整版</title>
+    <title>FF14 仙人微彩計算器 - v3.1 完美版</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -35,11 +35,20 @@
             margin: 0 auto;
         }
         
-        /* 左側：遊戲區域 */
+        /* --- 左側：遊戲區域 --- */
         .game-area {
             display: flex;
             flex-direction: column;
             align-items: center;
+        }
+
+        /* --- 右側：資訊區域 (Payout + 預覽) --- */
+        .right-area {
+            display: flex;
+            flex-direction: column;
+            width: 380px; 
+            padding-top: 55px; /* 對齊操作指引 */
+            gap: 20px;
         }
 
         /* 步驟指示器 */
@@ -71,7 +80,7 @@
             border-color: #4a9f4a;
         }
 
-        /* --- 操作指引 (新增樣式) --- */
+        /* 操作指引 */
         .instruction-panel {
             width: 100%;
             max-width: 380px;
@@ -82,6 +91,7 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             text-align: left;
+            min-height: 100px;
         }
         .instruction-header {
             color: #d4af37;
@@ -147,21 +157,13 @@
             box-shadow: 0 0 15px #4a9f4a, inset 0 0 10px rgba(74, 159, 74, 0.3);
             animation: pulse 1.5s infinite;
         }
-        .cell.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .cell.disabled { opacity: 0.5; cursor: not-allowed; }
         .cell .cell-ev {
-            position: absolute;
-            bottom: 2px;
-            right: 4px;
-            font-size: 10px;
-            color: #aaa;
+            position: absolute; bottom: 2px; right: 4px; font-size: 10px; color: #aaa;
         }
-        .cell.recommended .cell-ev {
-            color: #7fff7f;
-            font-weight: bold;
-        }
+        .cell.recommended .cell-ev { color: #7fff7f; font-weight: bold; }
+        
+        /* 最佳路線高亮動畫 */
         .cell.best-line-cell {
             border-color: #ff4444 !important;
             box-shadow: 0 0 20px #ff4444, inset 0 0 25px rgba(255, 68, 68, 0.4) !important;
@@ -169,370 +171,267 @@
             position: relative;
         }
         .cell.best-line-cell::before {
-            content: "";
-            position: absolute;
-            top: -5px;
-            left: -5px;
-            right: -5px;
-            bottom: -5px;
-            border: 3px solid #ff4444;
-            border-radius: 14px;
-            animation: cellPulse 1s infinite;
+            content: ""; position: absolute; top: -5px; left: -5px; right: -5px; bottom: -5px;
+            border: 3px solid #ff4444; border-radius: 14px; animation: cellPulse 1s infinite;
         }
         @keyframes cellPulse {
-            0%, 100% { 
-                box-shadow: 0 0 20px #ff4444, inset 0 0 25px rgba(255, 68, 68, 0.4);
-                border-color: #ff4444;
-            }
-            50% { 
-                box-shadow: 0 0 35px #ff6666, inset 0 0 35px rgba(255, 100, 100, 0.5);
-                border-color: #ff6666;
-            }
+            0%, 100% { box-shadow: 0 0 20px #ff4444, inset 0 0 25px rgba(255, 68, 68, 0.4); border-color: #ff4444; }
+            50% { box-shadow: 0 0 35px #ff6666, inset 0 0 35px rgba(255, 100, 100, 0.5); border-color: #ff6666; }
         }
-        
         @keyframes pulse {
             0%, 100% { box-shadow: 0 0 15px #4a9f4a, inset 0 0 10px rgba(74, 159, 74, 0.3); }
             50% { box-shadow: 0 0 25px #7fff7f, inset 0 0 15px rgba(127, 255, 127, 0.4); }
         }
         
-        /* 結果顯示 */
-        .result-cell {
-            font-size: 13px;
-            font-weight: bold;
-            padding: 6px 8px;
-            border-radius: 5px;
-            background: #2a2a4a;
-            min-width: 60px;
-            text-align: center;
-            transition: all 0.3s ease;
-            position: relative;
-            cursor: help;
+        .result-cell, .diag-result {
+            font-size: 13px; font-weight: bold; padding: 6px 8px; border-radius: 5px;
+            background: #2a2a4a; min-width: 60px; text-align: center;
+            transition: all 0.3s ease; position: relative; cursor: help;
         }
-        .result-cell.best {
+        .diag-result { font-size: 12px; }
+        .result-cell.best, .diag-result.best {
             background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
             box-shadow: 0 0 15px #ff4444, 0 0 30px #ff0000;
-            transform: scale(1.1);
-            border: 2px solid #fff;
-            animation: bestPulse 1s infinite;
+            transform: scale(1.1); border: 2px solid #fff; animation: bestPulse 1s infinite;
         }
         @keyframes bestPulse {
             0%, 100% { box-shadow: 0 0 15px #ff4444, 0 0 30px #ff0000; }
             50% { box-shadow: 0 0 25px #ff6666, 0 0 50px #ff4444; }
         }
-        .result-cell .ev { color: #ffd700; }
+        .ev { color: #ffd700; }
         
-        /* 斜線結果 */
-        .diag-result {
-            font-size: 12px;
-            font-weight: bold;
-            padding: 6px 8px;
-            border-radius: 5px;
-            background: #2a2a4a;
-            text-align: center;
-            transition: all 0.3s ease;
-            min-width: 60px;
-            cursor: help;
-        }
-        .diag-result .ev { color: #ffd700; }
-        .diag-result.best {
-            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
-            box-shadow: 0 0 15px #ff4444, 0 0 30px #ff0000;
-            transform: scale(1.1);
-            border: 2px solid #fff;
-            animation: bestPulse 1s infinite;
-        }
-        
-        /* 按鈕 */
-        .buttons {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-        }
+        .buttons { display: flex; gap: 8px; margin-top: 12px; }
         button {
-            font-size: 14px;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: transform 0.1s;
+            font-size: 14px; padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer;
+            font-weight: bold; transition: transform 0.1s;
         }
         button:hover { transform: scale(1.05); }
         button:active { transform: scale(0.98); }
         .btn-reset { background: #555; color: #fff; }
         .btn-undo { background: #8a5a2d; color: #fff; }
 
-        /* --- 介面提示 (圖例) --- */
         .legend-container {
-            display: flex;
-            justify-content: center;
-            gap: 25px;
-            margin-top: 15px;
-            padding: 10px;
+            display: flex; justify-content: center; gap: 25px; margin-top: 15px; padding: 10px;
         }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            color: #fff;
-        }
-        .legend-box {
-            width: 20px;
-            height: 20px;
-            border-radius: 6px;
-            background: transparent;
-            border: 2px solid #555;
-        }
-        .legend-box.initial {
-            border-color: #df9f4a;
-            background: rgba(223, 159, 74, 0.2);
-        }
-        .legend-box.revealed {
-            border-color: #4a9fdf;
-            background: rgba(74, 159, 223, 0.2);
-        }
-        .legend-box.recommended {
-            border-color: #7fff7f;
-            box-shadow: 0 0 5px #4a9f4a;
-            background: rgba(74, 159, 74, 0.2);
-        }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #fff; }
+        .legend-box { width: 20px; height: 20px; border-radius: 6px; background: transparent; border: 2px solid #555; }
+        .legend-box.initial { border-color: #df9f4a; background: rgba(223, 159, 74, 0.2); }
+        .legend-box.revealed { border-color: #4a9fdf; background: rgba(74, 159, 223, 0.2); }
+        .legend-box.recommended { border-color: #7fff7f; box-shadow: 0 0 5px #4a9f4a; background: rgba(74, 159, 74, 0.2); }
 
-        /* 右側：Payout 表 */
+        /* --- Payout 表 (雙欄) --- */
         .payout-panel {
             background: #2a2a4a;
             border-radius: 10px;
-            padding: 15px;
+            padding: 10px 15px;
             border: 1px solid #444;
-            max-height: 500px;
-            overflow-y: auto;
         }
         .payout-panel h3 {
             color: #d4af37;
             margin: 0 0 10px 0;
             text-align: center;
             border-bottom: 1px solid #444;
-            padding-bottom: 10px;
+            padding-bottom: 5px;
+            font-size: 16px;
+        }
+        #payout-list {
+            display: flex;
+            gap: 20px;
+        }
+        .payout-col {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            gap: 5px;
         }
         .payout-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 4px 0;
+            padding: 3px 0;
             border-bottom: 1px solid #333;
-            font-size: 14px;
+            font-size: 13px;
         }
-        .payout-row:last-child { border-bottom: none; }
-        .payout-sum {
-            width: 35px;
-            text-align: center;
-            font-weight: bold;
-            color: #aaa;
-        }
+        .payout-sum { width: 25px; text-align: center; font-weight: bold; color: #aaa; }
         .payout-sum.highlight-6 { color: #ff6b6b; }
         .payout-sum.highlight-24 { color: #ffd93d; }
         .payout-input {
-            width: 70px;
-            padding: 4px;
-            font-size: 13px;
-            text-align: right;
-            background: #3a3a5c;
-            color: #fff;
-            border: 1px solid #555;
-            border-radius: 4px;
+            width: 60px; padding: 2px; font-size: 13px; text-align: right;
+            background: #3a3a5c; color: #fff; border: 1px solid #555; border-radius: 4px;
         }
-        .payout-input:focus {
-            border-color: #d4af37;
-            outline: none;
-        }
-        .payout-label {
-            color: #888;
-            font-size: 11px;
-        }
+        .payout-label { color: #888; font-size: 10px; margin-left: 2px; }
         .btn-reset-payout {
-            width: 100%;
-            margin-top: 10px;
-            padding: 8px;
-            font-size: 12px;
-            background: #444;
-            color: #aaa;
+            width: 100%; margin-top: 10px; padding: 6px; font-size: 12px;
+            background: #444; color: #aaa; border-radius: 4px;
         }
 
-        /* 數字選擇彈窗 */
-        .number-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        .number-modal.show { display: flex; }
-        .number-grid {
-            background: #2a2a4a;
-            padding: 25px;
-            border-radius: 15px;
-            border: 2px solid #d4af37;
-            min-width: 220px;
-        }
-        .number-grid h4 {
-            text-align: center;
-            margin: 0 0 15px 0;
-            color: #d4af37;
-        }
-        .number-options {
-            display: grid;
-            grid-template-columns: repeat(3, 60px);
-            gap: 10px;
-        }
-        .number-btn {
-            width: 60px;
-            height: 60px;
-            font-size: 24px;
-            font-weight: bold;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            background: #4a4a6c;
-            color: #fff;
-            transition: all 0.2s;
-        }
-        .number-btn:hover:not(:disabled) {
-            background: #d4af37;
-            color: #000;
-            transform: scale(1.1);
-        }
-        .number-btn:disabled {
-            background: #333;
-            color: #555;
-            cursor: not-allowed;
-        }
-        .cancel-btn {
-            grid-column: span 3;
-            width: 100%;
-            height: 45px;
-            font-size: 16px;
-            background: #555;
-            margin-top: 10px;
-        }
-
-        /* 大型最佳選擇提示框 */
+        /* --- 左側：單一最佳選擇 Banner (無衝突時顯示) --- */
         .best-choice-banner {
             margin-top: 15px;
             padding: 12px 15px;
             background: linear-gradient(135deg, #2a2a4a 0%, #1a1a3a 100%);
             border-radius: 10px;
-            border: 2px solid #444;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            border: 2px solid #ff4444;
+            box-shadow: 0 5px 15px rgba(255, 68, 68, 0.2);
             display: flex;
             flex-direction: column;
             gap: 12px;
             min-width: 380px;
-            transition: all 0.2s ease;
-        }
-        /* 預覽模式樣式 */
-        .best-choice-banner.preview-mode {
-            border-color: #888;
-            background: linear-gradient(135deg, #333 0%, #222 100%);
-        }
-        .best-choice-banner.preview-mode .banner-title {
-            color: #aaa;
-        }
-        .best-choice-banner.preview-mode .banner-icon {
-            filter: grayscale(100%);
         }
         
         .banner-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #444;
+            display: flex; align-items: center; justify-content: space-between;
+            padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .banner-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .banner-icon {
-            font-size: 32px;
-        }
-        .banner-title-section {
-            display: flex;
-            flex-direction: column;
-        }
-        .banner-title {
-            font-size: 11px;
-            color: #888;
-            margin-bottom: 2px;
-        }
-        .banner-line {
-            font-size: 18px;
-            font-weight: bold;
-            color: #fff;
-        }
-        .banner-right {
-            text-align: right;
-        }
-        .banner-ev-label {
-            font-size: 11px;
-            color: #888;
-            margin-bottom: 2px;
-        }
-        .banner-ev-value {
-            font-size: 22px;
-            font-weight: bold;
-            color: #ffd700;
-        }
-        .banner-ev-unit {
-            font-size: 13px;
-            color: #ffd700;
-        }
-        .banner-probs {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-        }
+        .banner-left { display: flex; align-items: center; gap: 12px; }
+        .banner-icon { font-size: 28px; }
+        .banner-title { font-size: 11px; color: #888; margin-bottom: 2px; }
+        .banner-line { font-size: 16px; font-weight: bold; color: #fff; }
+        .banner-right { text-align: right; }
+        .banner-ev-label { font-size: 11px; color: #888; margin-bottom: 2px; }
+        .banner-ev-value { font-size: 20px; font-weight: bold; color: #ffd700; }
+        .banner-ev-unit { font-size: 12px; color: #ffd700; }
+        
+        .banner-probs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
         .prob-tag {
-            padding: 6px 8px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 6px;
-            font-size: 12px;
-            color: #ccc;
-            border: 1px solid #444;
-            text-align: center;
+            padding: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 6px;
+            font-size: 12px; color: #ccc; border: 1px solid #444; text-align: center;
         }
-        .prob-tag .prob-mgp {
-            color: #ffd700;
-            font-weight: bold;
-            display: block;
-        }
-        .prob-tag .prob-percent {
-            color: #888;
-            font-size: 10px;
-        }
-        .prob-tag.high-value {
-            background: rgba(255, 215, 0, 0.15);
-            border-color: #aa8a2a;
-        }
-        .prob-tag.jackpot {
-            background: rgba(255, 68, 68, 0.2);
-            border-color: #ff4444;
-            animation: jackpotGlow 1.5s infinite;
-        }
+        .prob-tag .prob-mgp { color: #ffd700; font-weight: bold; display: block; }
+        .prob-tag .prob-percent { color: #888; font-size: 10px; }
+        .prob-tag.high-value { background: rgba(255, 215, 0, 0.15); border-color: #aa8a2a; }
+        .prob-tag.jackpot { background: rgba(255, 68, 68, 0.2); border-color: #ff4444; animation: jackpotGlow 1.5s infinite; }
         @keyframes jackpotGlow {
             0%, 100% { box-shadow: 0 0 5px rgba(255, 68, 68, 0.5); }
             50% { box-shadow: 0 0 12px rgba(255, 68, 68, 0.8); }
+        }
+
+        /* --- 左側：VS 對決面板 (有衝突時顯示) --- */
+        .vs-container {
+            margin-top: 15px;
+            width: 100%;
+            min-width: 380px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .vs-card {
+            flex: 1;
+            background: #2a2a4a;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+        .vs-card.risky {
+            background: linear-gradient(180deg, rgba(255,68,68,0.1) 0%, rgba(20,20,30,0) 100%);
+            border: 1px solid #ff4444;
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.1);
+        }
+        .vs-card.safe {
+            background: linear-gradient(180deg, rgba(74,159,223,0.1) 0%, rgba(20,20,30,0) 100%);
+            border: 1px solid #4a9fdf;
+            box-shadow: 0 0 10px rgba(74, 159, 223, 0.1);
+        }
+
+        .vs-icon { font-size: 24px; margin-bottom: 5px; }
+        .vs-title { font-size: 12px; font-weight: bold; margin-bottom: 5px; }
+        .vs-card.risky .vs-title { color: #ff6666; }
+        .vs-card.safe .vs-title { color: #4a9fdf; }
+        
+        .vs-line-name { font-size: 13px; font-weight: bold; margin-bottom: 5px; min-height: 38px; display:flex; align-items:center; justify-content:center;}
+        
+        .vs-value-box { margin-bottom: 8px; }
+        .vs-label { font-size: 10px; color: #888; }
+        .vs-value { font-size: 18px; font-weight: bold; }
+        .vs-value.gold { color: #ffd700; }
+        .vs-value.blue { color: #4a9fdf; }
+        .vs-unit { font-size: 10px; color: #aaa; }
+
+        .vs-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            padding-top: 20px;
+        }
+        .vs-badge {
+            font-size: 14px;
+            font-weight: bold;
+            background: #fff;
+            color: #000;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .win-rate-label { font-size: 10px; color: #ccc; margin-bottom: 2px; }
+        .win-rate-val { font-size: 20px; font-weight: bold; color: #7fff7f; text-shadow: 0 0 5px rgba(127,255,127,0.3); }
+        .win-rate-desc { font-size: 10px; color: #888; margin-top: 2px; }
+
+        .vs-probs {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-top: auto;
+        }
+        .vs-prob-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            padding: 2px 4px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+        }
+        .vs-prob-val { color: #ffd700; }
+        .vs-prob-pct { color: #aaa; }
+
+        /* --- 右側：預覽面板 (獨立顯示區) --- */
+        .preview-banner {
+            padding: 12px 15px;
+            background: linear-gradient(135deg, #333 0%, #222 100%);
+            border: 1px solid #555;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 380px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            /* 改由 JS 控制是否顯示，預設隱藏 */
+        }
+        .preview-banner .banner-title { color: #bbb; }
+        .preview-banner .banner-icon { filter: grayscale(100%); }
+
+        /* Modal */
+        .number-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .number-modal.show { display: flex; }
+        .number-grid {
+            background: #2a2a4a; padding: 25px; border-radius: 15px; border: 2px solid #d4af37; min-width: 220px;
+        }
+        .number-grid h4 { text-align: center; margin: 0 0 15px 0; color: #d4af37; }
+        .number-options { display: grid; grid-template-columns: repeat(3, 60px); gap: 10px; }
+        .number-btn {
+            width: 60px; height: 60px; font-size: 24px; font-weight: bold; border: none; border-radius: 10px;
+            cursor: pointer; background: #4a4a6c; color: #fff; transition: all 0.2s;
+        }
+        .number-btn:hover:not(:disabled) { background: #d4af37; color: #000; transform: scale(1.1); }
+        .number-btn:disabled { background: #333; color: #555; cursor: not-allowed; }
+        .cancel-btn {
+            grid-column: span 3; width: 100%; height: 45px; font-size: 16px; background: #555;
+            margin-top: 10px; color: #fff; border:none; border-radius:5px; cursor:pointer;
         }
     </style>
 </head>
 <body>
 
-    <h1>🌵 仙人微彩計算器 - 完整版</h1>
+    <h1>🌵 仙人微彩計算器 - v3</h1>
     <p class="subtitle">點擊格子輸入數字，系統會自動推薦最佳揭露順序</p>
 
     <div class="main-container">
@@ -583,17 +482,51 @@
                     <div class="banner-left">
                         <div class="banner-icon" id="banner-icon">🎯</div>
                         <div class="banner-title-section">
-                            <div class="banner-title" id="banner-title-text">最佳選擇</div>
+                            <div class="banner-title" id="banner-title-text">最佳選擇 (完美)</div>
                             <div class="banner-line" id="banner-line-name">-</div>
                         </div>
                     </div>
                     <div class="banner-right">
-                        <div class="banner-ev-label">期望值</div>
-                        <div class="banner-ev-value"><span id="banner-ev-value">0</span> <span class="banner-ev-unit">金碟幣</span></div>
+                        <div class="banner-ev-label">平均期望值</div>
+                        <div class="banner-ev-value"><span id="banner-ev-value">0</span> <span class="banner-ev-unit">MGP</span></div>
                     </div>
                 </div>
-                <div class="banner-probs" id="banner-probs">
+                <div class="banner-probs" id="banner-probs"></div>
+            </div>
+
+            <div class="vs-container" id="vs-container" style="display:none;">
+                <div class="vs-card risky">
+                    <div class="vs-icon">🎯</div>
+                    <div class="vs-title">最佳期望值</div>
+                    <div class="vs-line-name" id="vs-risky-name">-</div>
+                    <div class="vs-value-box">
+                        <div class="vs-label">平均期望值</div>
+                        <div class="vs-value gold" id="vs-risky-ev">0</div>
+                        <div class="vs-unit">MGP</div>
                     </div>
+                    <div class="vs-probs" id="vs-risky-probs"></div>
+                </div>
+
+                <div class="vs-center">
+                    <div class="vs-badge">VS</div>
+                    <div class="win-rate-label">擊敗保底機率</div>
+                    <div class="win-rate-val" id="vs-win-rate">0%</div>
+                    <div class="win-rate-desc" id="vs-risk-label">風險評估</div>
+                </div>
+
+                <div class="vs-card safe">
+                    <div class="vs-icon">🛡️</div>
+                    <div class="vs-title">最高保底</div>
+                    <div class="vs-line-name" id="vs-safe-name">-</div>
+                    <div class="vs-value-box">
+                        <div class="vs-label">保證獲得</div>
+                        <div class="vs-value blue" id="vs-safe-val">0</div>
+                        <div class="vs-unit">MGP</div>
+                    </div>
+                    <div class="vs-probs" style="align-items: center; justify-content: center; color: #888; font-size:11px; padding:10px;">
+                        放棄大獎<br>穩拿獎勵
+                    </div>
+                </div>
             </div>
 
             <div class="buttons">
@@ -602,22 +535,36 @@
             </div>
 
             <div class="legend-container">
-                <div class="legend-item">
-                    <div class="legend-box initial"></div> 初始揭露
-                </div>
-                <div class="legend-item">
-                    <div class="legend-box revealed"></div> 已揭露
-                </div>
-                <div class="legend-item">
-                    <div class="legend-box recommended"></div> 推薦揭露
-                </div>
+                <div class="legend-item"><div class="legend-box initial"></div> 初始揭露</div>
+                <div class="legend-item"><div class="legend-box revealed"></div> 已揭露</div>
+                <div class="legend-item"><div class="legend-box recommended"></div> 推薦揭露</div>
             </div>
         </div>
 
-        <div class="payout-panel">
-            <h3>💰 Payout 表</h3>
-            <div id="payout-list"></div>
-            <button class="btn-reset-payout" onclick="resetPayouts()">重置為官方預設</button>
+        <div class="right-area">
+            <div class="payout-panel">
+                <h3>💰 Payout 表</h3>
+                <div id="payout-list">
+                    </div>
+                <button class="btn-reset-payout" onclick="resetPayouts()">重置為官方預設</button>
+            </div>
+
+            <div class="preview-banner" id="preview-banner" style="display:none;">
+                <div class="banner-header">
+                    <div class="banner-left">
+                        <div class="banner-icon">👀</div>
+                        <div class="banner-title-section">
+                            <div class="banner-title" id="preview-title">詳細資訊</div>
+                            <div class="banner-line" id="preview-line-name">-</div>
+                        </div>
+                    </div>
+                    <div class="banner-right">
+                        <div class="banner-ev-label">平均期望值</div>
+                        <div class="banner-ev-value"><span id="preview-ev-value">0</span> <span class="banner-ev-unit">MGP</span></div>
+                    </div>
+                </div>
+                <div class="banner-probs" id="preview-probs"></div>
+            </div>
         </div>
     </div>
 
@@ -629,7 +576,6 @@
     </div>
 
     <script>
-        // 官方預設 Payout
         const defaultPayouts = {
             6: 10000, 7: 36, 8: 720, 9: 360, 10: 80, 11: 252,
             12: 108, 13: 72, 14: 54, 15: 180, 16: 72, 17: 180,
@@ -649,69 +595,108 @@
             { id: "res-diag1", name: "右上→左下斜線", idx: [2, 4, 6] }
         ];
 
-        // 遊戲狀態
-        let board = Array(9).fill(null);        // null = 未揭露, 數字 = 已揭露
-        let revealOrder = [];                   // 揭露順序 [{cell, value, isInitial}]
-        let currentStep = 0;                    // 0=等待初始, 1-3=揭露中, 4=選線
+        let board = Array(9).fill(null);
+        let revealOrder = [];
+        let currentStep = 0;
         let selectedCell = null;
-        let latestLineStats = [];               // 儲存最後一次計算的所有線路數據，供 Hover 使用
+        let latestLineStats = [];
 
-        // 初始化
         function init() {
             initPayoutList();
             initHoverEvents(); 
             updateDisplay();
         }
 
-        // 初始化 Hover 事件監聽
+        // Payout 列表初始化 (垂直排列後再往右)
+        function initPayoutList() {
+            const container = document.getElementById('payout-list');
+            container.innerHTML = '<div class="payout-col" id="payout-col-1"></div><div class="payout-col" id="payout-col-2"></div>';
+            
+            const col1 = document.getElementById('payout-col-1');
+            const col2 = document.getElementById('payout-col-2');
+
+            for (let sum = 6; sum <= 15; sum++) col1.innerHTML += createPayoutRow(sum);
+            for (let sum = 16; sum <= 24; sum++) col2.innerHTML += createPayoutRow(sum);
+        }
+
+        function createPayoutRow(sum) {
+            const highlight = sum === 6 ? 'highlight-6' : (sum === 24 ? 'highlight-24' : '');
+            return `
+                <div class="payout-row">
+                    <span class="payout-sum ${highlight}">${sum}</span>
+                    <input type="number" class="payout-input" id="payout-${sum}" 
+                           value="${payouts[sum]}" onchange="updatePayout(${sum})">
+                    <span class="payout-label">MGP</span>
+                </div>`;
+        }
+
+        // Hover 事件邏輯優化
         function initHoverEvents() {
             lines.forEach(line => {
                 const el = document.getElementById(line.id);
-                // 滑鼠移入：顯示該線路預覽
                 el.addEventListener('mouseenter', () => {
                     if (currentStep < 4 || latestLineStats.length === 0) return;
-                    
                     const lineData = latestLineStats.find(l => l.id === line.id);
-                    if (lineData) {
-                        updateBannerContent([lineData], true); // true 表示預覽模式
-                    }
+                    // 滑鼠移入時，強制顯示該線路資訊，並標示為「預覽中」
+                    if (lineData) showPreview(lineData, true);
                 });
-
-                // 滑鼠移出：恢復最佳選擇
                 el.addEventListener('mouseleave', () => {
-                    if (currentStep < 4 || latestLineStats.length === 0) return;
-                    
-                    // 重新找出最佳線路
-                    const maxEV = Math.max(...latestLineStats.map(l => l.ev));
-                    const bestLines = latestLineStats.filter(l => l.ev === maxEV);
-                    updateBannerContent(bestLines, false); // false 表示恢復最佳模式
+                    // 滑鼠移出時，回復到顯示「最佳路線」
+                    if (currentStep >= 4) resetPreviewToBest();
                 });
             });
         }
 
-        // 點擊格子
-        function clickCell(cellIndex) {
-            if (board[cellIndex] !== null) return; // 已揭露
-            if (currentStep >= 4) return; // 已完成揭露階段
+        // 顯示預覽視窗內容
+        function showPreview(lineData, isHovering) {
+            const previewBanner = document.getElementById('preview-banner');
+            previewBanner.style.display = 'flex';
+            
+            const titleEl = document.getElementById('preview-title');
+            if (isHovering) {
+                titleEl.textContent = "選擇預覽 (滑鼠指引)";
+                titleEl.style.color = "#aaa"; // 灰色表示只是預覽
+            } else {
+                titleEl.textContent = "最佳選擇 (系統推薦)";
+                titleEl.style.color = "#ffd700"; // 金色表示推薦
+            }
+            
+            document.getElementById('preview-line-name').textContent = lineData.name;
+            document.getElementById('preview-ev-value').textContent = Math.round(lineData.ev).toLocaleString();
+            
+            updateProbabilityDisplay(lineData, 'preview-probs');
+        }
 
+        // 重置預覽視窗內容為最佳路線
+        function resetPreviewToBest() {
+            if (!latestLineStats.length) return;
+            const maxEV = Math.max(...latestLineStats.map(l => l.ev));
+            const bestLines = latestLineStats.filter(l => l.ev === maxEV);
+            // 顯示第一條最佳路線 (通常只有一條，若有多條則顯示第一條)
+            showPreview(bestLines[0], false);
+        }
+
+        function hidePreview() {
+            document.getElementById('preview-banner').style.display = 'none';
+        }
+
+        function clickCell(cellIndex) {
+            if (board[cellIndex] !== null) return;
+            if (currentStep >= 4) return;
             selectedCell = cellIndex;
             showNumberModal();
         }
 
-        // 顯示數字選擇彈窗
         function showNumberModal() {
             const modal = document.getElementById('number-modal');
             const options = document.getElementById('number-options');
-            
             const usedNumbers = new Set(board.filter(n => n !== null));
-            
             let html = '';
             for (let n = 1; n <= 9; n++) {
                 const disabled = usedNumbers.has(n) ? 'disabled' : '';
                 html += `<button class="number-btn" ${disabled} onclick="selectNumber(${n})">${n}</button>`;
             }
             html += `<button class="number-btn cancel-btn" onclick="hideNumberModal()">取消</button>`;
-            
             options.innerHTML = html;
             modal.classList.add('show');
         }
@@ -721,66 +706,49 @@
             selectedCell = null;
         }
 
-        // 選擇數字
         function selectNumber(num) {
             if (selectedCell === null) return;
-
             board[selectedCell] = num;
-            revealOrder.push({
-                cell: selectedCell,
-                value: num,
-                isInitial: currentStep === 0
-            });
-
+            revealOrder.push({ cell: selectedCell, value: num, isInitial: currentStep === 0 });
             currentStep = Math.min(currentStep + 1, 4);
-            
             hideNumberModal();
             updateDisplay();
         }
 
-        // 撤銷上一步
         function undoLast() {
             if (revealOrder.length === 0) return;
-
             const last = revealOrder.pop();
             board[last.cell] = null;
             currentStep = Math.max(0, currentStep - 1);
-
             updateDisplay();
         }
 
-        // 重新開始
         function resetGame() {
             board = Array(9).fill(null);
             revealOrder = [];
             currentStep = 0;
             latestLineStats = [];
             document.getElementById('best-choice-banner').style.display = 'none';
-            // 清除格子的最佳線路標記
+            document.getElementById('vs-container').style.display = 'none';
+            document.getElementById('preview-banner').style.display = 'none';
             for (let i = 0; i < 9; i++) {
                 document.getElementById('c' + i).classList.remove('best-line-cell');
             }
             updateDisplay();
         }
 
-        // 更新顯示
         function updateDisplay() {
-            // 更新格子顯示
             for (let i = 0; i < 9; i++) {
                 const cell = document.getElementById('c' + i);
                 cell.textContent = board[i] !== null ? board[i] : '';
                 cell.className = 'cell';
-                
                 if (board[i] !== null) {
                     cell.classList.add('revealed');
                     const order = revealOrder.find(r => r.cell === i);
-                    if (order && order.isInitial) {
-                        cell.classList.add('initial');
-                    }
+                    if (order && order.isInitial) cell.classList.add('initial');
                 }
             }
 
-            // 更新步驟指示器
             for (let i = 0; i <= 4; i++) {
                 const step = document.getElementById('step' + i);
                 step.className = 'step';
@@ -788,329 +756,245 @@
                 if (i === currentStep) step.classList.add('active');
             }
 
-            // 計算並顯示推薦
-            if (currentStep >= 1 && currentStep < 4) {
-                calculateBestReveal();
-            } else {
-                clearRecommendations();
-            }
+            if (currentStep >= 1 && currentStep < 4) calculateBestReveal();
+            else clearRecommendations();
 
-            // 計算線路期望值
             calculateLineEV();
-            
-            // ★★★ 更新操作指引文字 ★★★
             updateInstructions();
         }
-        
-        // ★★★ 更新操作指引文字邏輯 ★★★
+
         function updateInstructions() {
             const textField = document.getElementById('instruction-text');
             let html = '';
-
             switch(currentStep) {
-                case 0:
-                    html = '步驟 0：輸入初始數字<br>請依照遊戲畫面，點擊輸入<span style="color:#df9f4a; font-weight:bold;">初始已揭露</span>的數字。';
-                    break;
-                case 1:
-                    html = '步驟 1：選擇揭露位置 (剩餘 3 次)<br>推薦揭露 <span class="text-highlight">綠框格子</span>，有中間先選中間，Y字選法。';
-                    break;
-                case 2:
-                    html = '步驟 2：選擇揭露位置 (剩餘 2 次)<br>推薦揭露 <span class="text-highlight">綠框格子</span>，可獲得最高期望值。';
-                    break;
-                case 3:
-                    html = '步驟 3：選擇揭露位置 (剩餘 1 次)<br>推薦揭露 <span class="text-highlight">綠框格子</span>，做最後確認。';
-                    break;
-                case 4:
-                    html = '最終選擇：決定連線<br>觀察 <span style="color:#ffd700; font-weight:bold;">期望值</span>，點擊直/橫/斜線箭頭以完成遊戲。';
-                    break;
+                case 0: html = '步驟 0：輸入初始數字<br>請依照遊戲畫面，點擊輸入<span style="color:#df9f4a; font-weight:bold;">初始已揭露</span>的數字。'; break;
+                case 1: html = '步驟 1：選擇揭露位置 (剩餘 3 次)<br>推薦揭露 <span class="text-highlight">綠框格子</span>，有中間先選中間，Y字選法。'; break;
+                case 2: html = '步驟 2：選擇揭露位置 (剩餘 2 次)<br>推薦揭露 <span class="text-highlight">綠框格子</span>，可獲得最高期望值。'; break;
+                case 3: html = '步驟 3：選擇揭露位置 (剩餘 1 次)<br>推薦揭露 <span class="text-highlight">綠框格子</span>，做最後確認。'; break;
+                case 4: html = '最終選擇：決定連線<br>滑鼠移至各行列計算框上觀察 <span style="color:#ffd700; font-weight:bold;">期望值</span>。'; break;
             }
             textField.innerHTML = html;
         }
 
-        // 計算最佳揭露格子
         function calculateBestReveal() {
             const unrevealedCells = [];
-            for (let i = 0; i < 9; i++) {
-                if (board[i] === null) unrevealedCells.push(i);
-            }
-
+            for (let i = 0; i < 9; i++) { if (board[i] === null) unrevealedCells.push(i); }
             if (unrevealedCells.length === 0) return;
 
-            // 取得可用數字
             const usedNumbers = new Set(board.filter(n => n !== null));
             const availableNumbers = [];
-            for (let n = 1; n <= 9; n++) {
-                if (!usedNumbers.has(n)) availableNumbers.push(n);
-            }
+            for (let n = 1; n <= 9; n++) { if (!usedNumbers.has(n)) availableNumbers.push(n); }
 
-            // 對每個未揭露格子，計算揭露後的最佳期望值
             let cellScores = [];
-
             unrevealedCells.forEach(cellIdx => {
-                // 模擬揭露這個格子的所有可能數字
                 let totalBestEV = 0;
-
                 availableNumbers.forEach(num => {
-                    // 假設這格是 num
                     let tempBoard = [...board];
                     tempBoard[cellIdx] = num;
-
-                    // 計算這個盤面下，最佳線路的期望值
                     const bestLineEV = calculateBestLineEV(tempBoard, availableNumbers.filter(n => n !== num));
                     totalBestEV += bestLineEV;
                 });
-
-                // 平均期望值
-                const avgBestEV = totalBestEV / availableNumbers.length;
-                cellScores.push({ cell: cellIdx, ev: avgBestEV });
+                cellScores.push({ cell: cellIdx, ev: totalBestEV / availableNumbers.length });
             });
 
-            // 排序找最佳
             cellScores.sort((a, b) => b.ev - a.ev);
-
-            // 標記推薦格子
             const bestEV = cellScores[0].ev;
             cellScores.forEach(cs => {
                 const cell = document.getElementById('c' + cs.cell);
-                if (Math.abs(cs.ev - bestEV) < 0.01) {
-                    cell.classList.add('recommended');
-                }
-                // 顯示期望值
+                if (Math.abs(cs.ev - bestEV) < 0.01) cell.classList.add('recommended');
                 let evSpan = cell.querySelector('.cell-ev');
-                if (!evSpan) {
-                    evSpan = document.createElement('span');
-                    evSpan.className = 'cell-ev';
-                    cell.appendChild(evSpan);
-                }
+                if (!evSpan) { evSpan = document.createElement('span'); evSpan.className = 'cell-ev'; cell.appendChild(evSpan); }
                 evSpan.textContent = Math.round(cs.ev);
             });
-
-            return cellScores[0];
         }
 
-        // 計算給定盤面的最佳線路期望值
         function calculateBestLineEV(tempBoard, remainingNumbers) {
-            // 找出還需要填的格子
             const emptyIndices = [];
-            for (let i = 0; i < 9; i++) {
-                if (tempBoard[i] === null) emptyIndices.push(i);
-            }
-
-            // 產生所有排列
+            for (let i = 0; i < 9; i++) { if (tempBoard[i] === null) emptyIndices.push(i); }
             const perms = getPermutations(remainingNumbers);
             if (perms.length === 0) return 0;
 
             let lineEVs = lines.map(() => 0);
-
             perms.forEach(perm => {
                 let fullBoard = [...tempBoard];
                 let pIdx = 0;
-                emptyIndices.forEach(i => {
-                    fullBoard[i] = perm[pIdx++];
-                });
-
-                // 計算每條線的報酬
+                emptyIndices.forEach(i => { fullBoard[i] = perm[pIdx++]; });
                 lines.forEach((line, lineIdx) => {
                     const sum = fullBoard[line.idx[0]] + fullBoard[line.idx[1]] + fullBoard[line.idx[2]];
                     lineEVs[lineIdx] += payouts[sum] || 0;
                 });
             });
-
-            // 計算每條線的平均期望值
-            lineEVs = lineEVs.map(total => total / perms.length);
-
-            // 返回最佳線路的期望值
-            return Math.max(...lineEVs);
+            return Math.max(...lineEVs.map(total => total / perms.length));
         }
 
-        // 計算各線路期望值
         function calculateLineEV() {
             const usedNumbers = new Set(board.filter(n => n !== null));
             const availableNumbers = [];
-            for (let n = 1; n <= 9; n++) {
-                if (!usedNumbers.has(n)) availableNumbers.push(n);
-            }
-
+            for (let n = 1; n <= 9; n++) { if (!usedNumbers.has(n)) availableNumbers.push(n); }
             const emptyIndices = [];
-            for (let i = 0; i < 9; i++) {
-                if (board[i] === null) emptyIndices.push(i);
-            }
+            for (let i = 0; i < 9; i++) { if (board[i] === null) emptyIndices.push(i); }
 
             const perms = getPermutations(availableNumbers);
             if (perms.length === 0 && emptyIndices.length > 0) return;
 
-            // 初始化線路統計，包含 payout 分佈
             let lineStats = lines.map(line => ({ 
-                ...line, 
-                totalMGP: 0, 
-                count: 0,
-                payoutDist: {} // { mgp: count }
+                ...line, totalMGP: 0, count: 0, payoutDist: {}, minMGP: Infinity 
             }));
 
             if (perms.length === 0) {
-                // 所有格子都已揭露
                 lines.forEach((line, idx) => {
                     const sum = board[line.idx[0]] + board[line.idx[1]] + board[line.idx[2]];
                     const mgp = payouts[sum] || 0;
                     lineStats[idx].totalMGP = mgp;
                     lineStats[idx].count = 1;
                     lineStats[idx].payoutDist[mgp] = 1;
+                    lineStats[idx].minMGP = mgp;
                 });
             } else {
                 perms.forEach(perm => {
                     let fullBoard = [...board];
                     let pIdx = 0;
-                    emptyIndices.forEach(i => {
-                        fullBoard[i] = perm[pIdx++];
-                    });
-
+                    emptyIndices.forEach(i => { fullBoard[i] = perm[pIdx++]; });
                     lineStats.forEach((line, idx) => {
                         const sum = fullBoard[line.idx[0]] + fullBoard[line.idx[1]] + fullBoard[line.idx[2]];
                         const mgp = payouts[sum] || 0;
                         lineStats[idx].totalMGP += mgp;
                         lineStats[idx].count++;
                         lineStats[idx].payoutDist[mgp] = (lineStats[idx].payoutDist[mgp] || 0) + 1;
+                        if (mgp < lineStats[idx].minMGP) lineStats[idx].minMGP = mgp;
                     });
                 });
             }
 
-            // 計算期望值並找最大
-            lineStats.forEach(line => {
-                line.ev = line.count > 0 ? line.totalMGP / line.count : 0;
-            });
-
-            // 保存到全域變數，供 hover 使用
+            lineStats.forEach(line => { line.ev = line.count > 0 ? line.totalMGP / line.count : 0; });
             latestLineStats = lineStats;
-
+            
             const maxEV = Math.max(...lineStats.map(l => l.ev));
-
-            // 先清除所有格子的最佳線路標記
-            for (let i = 0; i < 9; i++) {
-                document.getElementById('c' + i).classList.remove('best-line-cell');
-            }
-
-            // 更新顯示
-            let bestLine = null;
+            for (let i = 0; i < 9; i++) document.getElementById('c' + i).classList.remove('best-line-cell');
+            
             lineStats.forEach(line => {
                 const el = document.getElementById(line.id);
                 const evText = Math.round(line.ev);
-
                 if (line.id.includes('diag')) {
                     const arrow = line.id === 'res-diag0' ? '↘' : '↙';
                     el.innerHTML = `${arrow} <span class="ev">${evText}</span>`;
                 } else {
                     el.innerHTML = `<span class="ev">${evText}</span>`;
                 }
-
                 el.classList.remove('best');
                 if (line.ev === maxEV && maxEV > 0 && currentStep >= 4) {
                     el.classList.add('best');
-                    if (!bestLine) bestLine = line; // 記錄第一個最佳線路
-                    // 標記這條線上的格子
-                    line.idx.forEach(cellIdx => {
-                        document.getElementById('c' + cellIdx).classList.add('best-line-cell');
-                    });
+                    line.idx.forEach(cellIdx => document.getElementById('c' + cellIdx).classList.add('best-line-cell'));
                 }
             });
 
-            // 更新大型最佳選擇提示框（只在選線階段顯示）
-            const bestLines = lineStats.filter(l => l.ev === maxEV && maxEV > 0);
-            const banner = document.getElementById('best-choice-banner');
-            
-            if (bestLines.length > 0 && currentStep >= 4) {
-                banner.style.display = 'flex';
-                // 使用抽離出的函數來渲染
-                updateBannerContent(bestLines, false);
+            if (currentStep >= 4) {
+                updateBestChoiceDisplay();
+                // ★★★ 關鍵修改：進入步驟 4 時，自動將預覽框設為最佳解 ★★★
+                resetPreviewToBest();
             } else {
-                banner.style.display = 'none';
+                document.getElementById('best-choice-banner').style.display = 'none';
+                document.getElementById('vs-container').style.display = 'none';
+                document.getElementById('preview-banner').style.display = 'none';
             }
         }
 
-        // 統一更新 Banner 內容的函數
-        function updateBannerContent(linesData, isPreview) {
-            const banner = document.getElementById('best-choice-banner');
-            const titleText = document.getElementById('banner-title-text');
-            const lineName = document.getElementById('banner-line-name');
-            const evValue = document.getElementById('banner-ev-value');
-            const icon = document.getElementById('banner-icon');
+        // 處理顯示邏輯 (單一顯示 或 VS 顯示)
+        function updateBestChoiceDisplay() {
+            if (!latestLineStats.length) return;
+
+            const maxEV = Math.max(...latestLineStats.map(l => l.ev));
+            const bestLines = latestLineStats.filter(l => l.ev === maxEV);
             
-            if (isPreview) {
-                banner.classList.add('preview-mode');
-                titleText.textContent = "選擇預覽";
-                icon.textContent = "👀";
+            const maxMinMGP = Math.max(...latestLineStats.map(l => l.minMGP));
+            const safestLines = latestLineStats.filter(l => l.minMGP === maxMinMGP);
+            
+            // 如果最佳期望值的保底 < 最高保底，觸發 VS 模式
+            if (bestLines[0].minMGP < maxMinMGP) {
+                showVSMode(bestLines[0], safestLines[0]);
             } else {
-                banner.classList.remove('preview-mode');
-                titleText.textContent = "最佳選擇";
-                icon.textContent = "🎯";
+                showSingleMode(bestLines);
             }
-
-            const names = linesData.map(l => l.name).join(' 或 ');
-            lineName.textContent = names;
-            // 取第一個數據的 EV (如果是多個最佳解，EV 應該都一樣)
-            evValue.textContent = Math.round(linesData[0].ev).toLocaleString();
-
-            // 顯示機率分佈
-            updateProbabilityDisplay(linesData[0]);
         }
 
-        // 更新機率分佈顯示
-        function updateProbabilityDisplay(line) {
-            const probsContainer = document.getElementById('banner-probs');
-            if (!line || !line.payoutDist) {
-                probsContainer.innerHTML = '';
-                return;
+        function showSingleMode(linesData) {
+            document.getElementById('vs-container').style.display = 'none';
+            const banner = document.getElementById('best-choice-banner');
+            banner.style.display = 'flex';
+            
+            document.getElementById('banner-line-name').textContent = linesData.map(l => l.name).join(' 或 ');
+            document.getElementById('banner-ev-value').textContent = Math.round(linesData[0].ev).toLocaleString();
+            updateProbabilityDisplay(linesData[0], 'banner-probs');
+        }
+
+        function showVSMode(riskyLine, safeLine) {
+            document.getElementById('best-choice-banner').style.display = 'none';
+            const container = document.getElementById('vs-container');
+            container.style.display = 'flex';
+
+            document.getElementById('vs-risky-name').textContent = riskyLine.name;
+            document.getElementById('vs-risky-ev').textContent = Math.round(riskyLine.ev).toLocaleString();
+            
+            document.getElementById('vs-safe-name').textContent = safeLine.name;
+            document.getElementById('vs-safe-val').textContent = safeLine.minMGP.toLocaleString();
+
+            const threshold = safeLine.minMGP;
+            let winCount = 0;
+            const probs = [];
+            
+            Object.entries(riskyLine.payoutDist).forEach(([mgp, count]) => {
+                if (parseInt(mgp) > threshold) winCount += count;
+                probs.push({ mgp: parseInt(mgp), count: count, percent: (count/riskyLine.count*100) });
+            });
+            
+            const winRate = (winCount / riskyLine.count) * 100;
+            document.getElementById('vs-win-rate').textContent = winRate.toFixed(0) + "%";
+            
+            const riskLabel = document.getElementById('vs-risk-label');
+            if (winRate >= 60) {
+                riskLabel.textContent = "值得一試";
+                riskLabel.style.color = "#7fff7f";
+            } else if (winRate >= 40) {
+                riskLabel.textContent = "風險適中";
+                riskLabel.style.color = "#ffd700";
+            } else {
+                riskLabel.textContent = "高風險";
+                riskLabel.style.color = "#ff6b6b";
             }
 
-            // 將 payout 分佈轉換為陣列並排序（由高到低）
+            probs.sort((a,b) => b.mgp - a.mgp);
+            let html = '';
+            probs.slice(0, 3).forEach(p => {
+                html += `<div class="vs-prob-row">
+                    <span class="vs-prob-val">${p.mgp}</span>
+                    <span class="vs-prob-pct">${p.percent.toFixed(0)}%</span>
+                </div>`;
+            });
+            document.getElementById('vs-risky-probs').innerHTML = html;
+        }
+
+        function updateProbabilityDisplay(line, containerId) {
+            const probsContainer = document.getElementById(containerId);
+            if (!line || !line.payoutDist) { probsContainer.innerHTML = ''; return; }
             const probs = Object.entries(line.payoutDist)
-                .map(([mgp, count]) => ({
-                    mgp: parseInt(mgp),
-                    count: count,
-                    percent: (count / line.count * 100).toFixed(1)
-                }))
+                .map(([mgp, count]) => ({ mgp: parseInt(mgp), count: count, percent: (count / line.count * 100).toFixed(1) }))
                 .sort((a, b) => b.mgp - a.mgp);
-
-            // 生成 HTML
             let html = '';
             probs.forEach(p => {
                 let tagClass = 'prob-tag';
-                if (p.mgp >= 10000) {
-                    tagClass += ' jackpot';
-                } else if (p.mgp >= 1000) {
-                    tagClass += ' high-value';
-                }
-                html += `<div class="${tagClass}">
-                    <span class="prob-mgp">${p.mgp.toLocaleString()}</span>
-                    <span class="prob-percent">(${p.percent}%)</span>
-                </div>`;
+                if (p.mgp >= 10000) tagClass += ' jackpot';
+                else if (p.mgp >= 1000) tagClass += ' high-value';
+                html += `<div class="${tagClass}"><span class="prob-mgp">${p.mgp.toLocaleString()}</span><span class="prob-percent">(${p.percent}%)</span></div>`;
             });
-
             probsContainer.innerHTML = html;
         }
 
-        // 清除推薦標記
         function clearRecommendations() {
             for (let i = 0; i < 9; i++) {
                 const cell = document.getElementById('c' + i);
                 cell.classList.remove('recommended');
                 const evSpan = cell.querySelector('.cell-ev');
                 if (evSpan) evSpan.remove();
-            }
-        }
-
-        // Payout 相關
-        function initPayoutList() {
-            const container = document.getElementById('payout-list');
-            container.innerHTML = '';
-            for (let sum = 6; sum <= 24; sum++) {
-                const highlight = sum === 6 ? 'highlight-6' : (sum === 24 ? 'highlight-24' : '');
-                container.innerHTML += `
-                    <div class="payout-row">
-                        <span class="payout-sum ${highlight}">${sum}</span>
-                        <input type="number" class="payout-input" id="payout-${sum}" 
-                               value="${payouts[sum]}" onchange="updatePayout(${sum})">
-                        <span class="payout-label">MGP</span>
-                    </div>`;
             }
         }
 
@@ -1125,24 +1009,19 @@
             updateDisplay();
         }
 
-        // 排列組合
         function getPermutations(arr) {
             if (arr.length === 0) return [[]];
             if (arr.length === 1) return [[arr[0]]];
-            
             let result = [];
             for (let i = 0; i < arr.length; i++) {
                 const current = arr[i];
                 const remaining = [...arr.slice(0, i), ...arr.slice(i + 1)];
                 const perms = getPermutations(remaining);
-                perms.forEach(perm => {
-                    result.push([current, ...perm]);
-                });
+                perms.forEach(perm => result.push([current, ...perm]));
             }
             return result;
         }
 
-        // 頁面載入
         window.onload = init;
     </script>
 </body>
