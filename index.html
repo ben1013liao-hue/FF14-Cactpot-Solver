@@ -427,12 +427,49 @@
             grid-column: span 3; width: 100%; height: 45px; font-size: 16px; background: #555;
             margin-top: 10px; color: #fff; border:none; border-radius:5px; cursor:pointer;
         }
+
+        /* 語系選擇器 */
+        .lang-selector {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+        }
+        .lang-select {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 2px solid #d4af37;
+            border-radius: 8px;
+            background: #2a2a4a;
+            color: #fff;
+            cursor: pointer;
+            outline: none;
+        }
+        .lang-select:hover {
+            background: #3a3a5c;
+        }
+        .lang-select option {
+            background: #2a2a4a;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
 
-    <h1>🌵 仙人微彩計算器 - v3</h1>
-    <p class="subtitle">點擊格子輸入數字，系統會自動推薦最佳揭露順序</p>
+    <!-- 語系選擇器 -->
+    <div class="lang-selector">
+        <select class="lang-select" id="lang-select" onchange="setLang(this.value)">
+            <option value="zh-TW">繁體中文</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
+            <option value="es">Español</option>
+            <option value="ru">Русский</option>
+        </select>
+    </div>
+
+    <h1 id="main-title">🌵 仙人微彩計算器 - v3</h1>
+    <p class="subtitle" id="main-subtitle">點擊格子輸入數字，系統會自動推薦最佳揭露順序</p>
 
     <div class="main-container">
         <div class="game-area">
@@ -445,7 +482,7 @@
             </div>
 
             <div class="instruction-panel">
-                <div class="instruction-header">📋 操作指引</div>
+                <div class="instruction-header" id="instruction-header">📋 操作指引</div>
                 <div class="instruction-content" id="instruction-text">
                     正在載入...
                 </div>
@@ -487,7 +524,7 @@
                         </div>
                     </div>
                     <div class="banner-right">
-                        <div class="banner-ev-label">平均期望值</div>
+                        <div class="banner-ev-label" id="banner-ev-label">平均期望值</div>
                         <div class="banner-ev-value"><span id="banner-ev-value">0</span> <span class="banner-ev-unit">MGP</span></div>
                     </div>
                 </div>
@@ -497,10 +534,10 @@
             <div class="vs-container" id="vs-container" style="display:none;">
                 <div class="vs-card risky">
                     <div class="vs-icon">🎯</div>
-                    <div class="vs-title">最佳期望值</div>
+                    <div class="vs-title" id="vs-risky-title">最佳期望值</div>
                     <div class="vs-line-name" id="vs-risky-name">-</div>
                     <div class="vs-value-box">
-                        <div class="vs-label">平均期望值</div>
+                        <div class="vs-label" id="vs-risky-label">平均期望值</div>
                         <div class="vs-value gold" id="vs-risky-ev">0</div>
                         <div class="vs-unit">MGP</div>
                     </div>
@@ -509,44 +546,44 @@
 
                 <div class="vs-center">
                     <div class="vs-badge">VS</div>
-                    <div class="win-rate-label">擊敗保底機率</div>
+                    <div class="win-rate-label" id="vs-win-label">擊敗保底機率</div>
                     <div class="win-rate-val" id="vs-win-rate">0%</div>
                     <div class="win-rate-desc" id="vs-risk-label">風險評估</div>
                 </div>
 
                 <div class="vs-card safe">
                     <div class="vs-icon">🛡️</div>
-                    <div class="vs-title">最高保底</div>
+                    <div class="vs-title" id="vs-safe-title">最高保底</div>
                     <div class="vs-line-name" id="vs-safe-name">-</div>
                     <div class="vs-value-box">
-                        <div class="vs-label">保證獲得</div>
+                        <div class="vs-label" id="vs-safe-label">保證獲得</div>
                         <div class="vs-value blue" id="vs-safe-val">0</div>
                         <div class="vs-unit">MGP</div>
                     </div>
-                    <div class="vs-probs" style="align-items: center; justify-content: center; color: #888; font-size:11px; padding:10px;">
+                    <div class="vs-probs" id="vs-safe-desc" style="align-items: center; justify-content: center; color: #888; font-size:11px; padding:10px;">
                         放棄大獎<br>穩拿獎勵
                     </div>
                 </div>
             </div>
 
             <div class="buttons">
-                <button class="btn-undo" onclick="undoLast()">↩ 撤銷</button>
-                <button class="btn-reset" onclick="resetGame()">🔄 重置</button>
+                <button class="btn-undo" id="btn-undo" onclick="undoLast()">↩ 撤銷</button>
+                <button class="btn-reset" id="btn-reset" onclick="resetGame()">🔄 重置</button>
             </div>
 
             <div class="legend-container">
-                <div class="legend-item"><div class="legend-box initial"></div> 初始揭露</div>
-                <div class="legend-item"><div class="legend-box revealed"></div> 已揭露</div>
-                <div class="legend-item"><div class="legend-box recommended"></div> 推薦揭露</div>
+                <div class="legend-item"><div class="legend-box initial"></div> <span id="legend-initial">初始揭露</span></div>
+                <div class="legend-item"><div class="legend-box revealed"></div> <span id="legend-revealed">已揭露</span></div>
+                <div class="legend-item"><div class="legend-box recommended"></div> <span id="legend-recommended">推薦揭露</span></div>
             </div>
         </div>
 
         <div class="right-area">
             <div class="payout-panel">
-                <h3>💰 Payout 表</h3>
+                <h3 id="payout-title">💰 Payout 表</h3>
                 <div id="payout-list">
                     </div>
-                <button class="btn-reset-payout" onclick="resetPayouts()">重置為官方預設</button>
+                <button class="btn-reset-payout" id="btn-reset-payout" onclick="resetPayouts()">重置為官方預設</button>
             </div>
 
             <div class="preview-banner" id="preview-banner" style="display:none;">
@@ -559,7 +596,7 @@
                         </div>
                     </div>
                     <div class="banner-right">
-                        <div class="banner-ev-label">平均期望值</div>
+                        <div class="banner-ev-label" id="preview-ev-label">平均期望值</div>
                         <div class="banner-ev-value"><span id="preview-ev-value">0</span> <span class="banner-ev-unit">MGP</span></div>
                     </div>
                 </div>
@@ -570,12 +607,218 @@
 
     <div class="number-modal" id="number-modal">
         <div class="number-grid">
-            <h4>選擇數字</h4>
+            <h4 id="modal-title">選擇數字</h4>
             <div class="number-options" id="number-options"></div>
         </div>
     </div>
 
     <script>
+        // ==================== 多國語系系統 ====================
+        const i18n = {
+            'zh-TW': {
+                title: '🌵 仙人微彩計算器 - v3',
+                subtitle: '點擊格子輸入數字，系統會自動推薦最佳揭露順序',
+                step0: '初', step4: '選',
+                instructionHeader: '📋 操作指引',
+                instructions: [
+                    '步驟 0：輸入初始數字<br>請點擊遊戲一開始揭露的格子，輸入該數字。',
+                    '步驟 1：選擇揭露位置 (剩餘 3 次)<br>推薦揭露 <span class="text-highlight">綠框格子</span>，可獲得最高期望值。',
+                    '步驟 2：選擇揭露位置 (剩餘 2 次)<br>推薦揭露 <span class="text-highlight">綠框格子</span>，可獲得最高期望值。',
+                    '步驟 3：選擇揭露位置 (剩餘 1 次)<br>推薦揭露 <span class="text-highlight">綠框格子</span>，可獲得最高期望值。',
+                    '🎯 選擇最佳線路！<br>紅色高亮的線路是最佳選擇，點擊查看詳情。'
+                ],
+                lines: {
+                    'res-row0': '第一橫排 (上)', 'res-row1': '第二橫排 (中)', 'res-row2': '第三橫排 (下)',
+                    'res-col0': '第一直排 (左)', 'res-col1': '第二直排 (中)', 'res-col2': '第三直排 (右)',
+                    'res-diag0': '左上→右下斜線', 'res-diag1': '右上→左下斜線'
+                },
+                btnUndo: '↩ 撤銷', btnReset: '🔄 重置', btnResetPayout: '重置為官方預設',
+                payoutTitle: '💰 Payout 表', modalTitle: '選擇數字', modalCancel: '取消',
+                legendInitial: '初始揭露', legendRevealed: '已揭露', legendRecommended: '推薦揭露',
+                bannerBest: '最佳選擇 (完美)', bannerEvLabel: '平均期望值',
+                previewTitle: '詳細資訊',
+                vsRiskyTitle: '最佳期望值', vsSafeTitle: '最高保底',
+                vsRiskyLabel: '平均期望值', vsSafeLabel: '保證獲得',
+                vsWinLabel: '擊敗保底機率', vsSafeDesc: '放棄大獎<br>穩拿獎勵',
+                riskWorth: '值得一試', riskMid: '風險適中', riskHigh: '高風險'
+            },
+            'en': {
+                title: '🌵 Mini Cactpot Calculator - v3',
+                subtitle: 'Click cells to enter numbers, system recommends best reveal order',
+                step0: 'Init', step4: 'Pick',
+                instructionHeader: '📋 Guide',
+                instructions: [
+                    'Step 0: Enter Initial Number<br>Click the cell revealed at game start and enter that number.',
+                    'Step 1: Choose Reveal (3 left)<br>Recommend <span class="text-highlight">green-bordered cells</span> for highest EV.',
+                    'Step 2: Choose Reveal (2 left)<br>Recommend <span class="text-highlight">green-bordered cells</span> for highest EV.',
+                    'Step 3: Choose Reveal (1 left)<br>Recommend <span class="text-highlight">green-bordered cells</span> for highest EV.',
+                    '🎯 Choose Best Line!<br>Red highlighted line is optimal. Click for details.'
+                ],
+                lines: {
+                    'res-row0': 'Row 1 (Top)', 'res-row1': 'Row 2 (Mid)', 'res-row2': 'Row 3 (Bot)',
+                    'res-col0': 'Col 1 (Left)', 'res-col1': 'Col 2 (Mid)', 'res-col2': 'Col 3 (Right)',
+                    'res-diag0': 'Diagonal ↘', 'res-diag1': 'Diagonal ↙'
+                },
+                btnUndo: '↩ Undo', btnReset: '🔄 Reset', btnResetPayout: 'Reset to Default',
+                payoutTitle: '💰 Payout Table', modalTitle: 'Select Number', modalCancel: 'Cancel',
+                legendInitial: 'Initial', legendRevealed: 'Revealed', legendRecommended: 'Recommended',
+                bannerBest: 'Best Choice (Perfect)', bannerEvLabel: 'Expected Value',
+                previewTitle: 'Details',
+                vsRiskyTitle: 'Best EV', vsSafeTitle: 'Safest',
+                vsRiskyLabel: 'Expected Value', vsSafeLabel: 'Guaranteed',
+                vsWinLabel: 'Beat Safe Rate', vsSafeDesc: 'Skip jackpot<br>Secure reward',
+                riskWorth: 'Worth trying', riskMid: 'Medium risk', riskHigh: 'High risk'
+            },
+            'ja': {
+                title: '🌵 ミニくじテンダー計算機 - v3',
+                subtitle: 'マスをクリックして数字を入力、最適な公開順序を推奨します',
+                step0: '初', step4: '選',
+                instructionHeader: '📋 ガイド',
+                instructions: [
+                    'ステップ0：初期数字を入力<br>ゲーム開始時に公開されたマスをクリックして数字を入力。',
+                    'ステップ1：公開位置を選択（残り3回）<br><span class="text-highlight">緑枠マス</span>を公開で期待値最大。',
+                    'ステップ2：公開位置を選択（残り2回）<br><span class="text-highlight">緑枠マス</span>を公開で期待値最大。',
+                    'ステップ3：公開位置を選択（残り1回）<br><span class="text-highlight">緑枠マス</span>を公開で期待値最大。',
+                    '🎯 最適ラインを選択！<br>赤いハイライトが最適です。'
+                ],
+                lines: {
+                    'res-row0': '横1列目（上）', 'res-row1': '横2列目（中）', 'res-row2': '横3列目（下）',
+                    'res-col0': '縦1列目（左）', 'res-col1': '縦2列目（中）', 'res-col2': '縦3列目（右）',
+                    'res-diag0': '斜め↘', 'res-diag1': '斜め↙'
+                },
+                btnUndo: '↩ 戻す', btnReset: '🔄 リセット', btnResetPayout: 'デフォルトに戻す',
+                payoutTitle: '💰 配当表', modalTitle: '数字を選択', modalCancel: 'キャンセル',
+                legendInitial: '初期公開', legendRevealed: '公開済み', legendRecommended: '推奨',
+                bannerBest: '最適選択（完璧）', bannerEvLabel: '期待値',
+                previewTitle: '詳細',
+                vsRiskyTitle: '最高期待値', vsSafeTitle: '最高保証',
+                vsRiskyLabel: '期待値', vsSafeLabel: '保証獲得',
+                vsWinLabel: '保証超え確率', vsSafeDesc: '大当たり放棄<br>確実に獲得',
+                riskWorth: '試す価値あり', riskMid: 'リスク中', riskHigh: '高リスク'
+            },
+            'ko': {
+                title: '🌵 미니 선인장 복권 계산기 - v3',
+                subtitle: '칸을 클릭하여 숫자 입력, 최적 공개 순서를 추천합니다',
+                step0: '초기', step4: '선택',
+                instructionHeader: '📋 가이드',
+                instructions: [
+                    '단계 0: 초기 숫자 입력<br>게임 시작 시 공개된 칸을 클릭하여 숫자 입력.',
+                    '단계 1: 공개 위치 선택 (3회 남음)<br><span class="text-highlight">녹색 테두리 칸</span> 공개로 최대 기대값.',
+                    '단계 2: 공개 위치 선택 (2회 남음)<br><span class="text-highlight">녹색 테두리 칸</span> 공개로 최대 기대값.',
+                    '단계 3: 공개 위치 선택 (1회 남음)<br><span class="text-highlight">녹색 테두리 칸</span> 공개로 최대 기대값.',
+                    '🎯 최적 라인 선택!<br>빨간 강조 라인이 최적입니다.'
+                ],
+                lines: {
+                    'res-row0': '가로 1 (상)', 'res-row1': '가로 2 (중)', 'res-row2': '가로 3 (하)',
+                    'res-col0': '세로 1 (좌)', 'res-col1': '세로 2 (중)', 'res-col2': '세로 3 (우)',
+                    'res-diag0': '대각선 ↘', 'res-diag1': '대각선 ↙'
+                },
+                btnUndo: '↩ 실행취소', btnReset: '🔄 초기화', btnResetPayout: '기본값으로',
+                payoutTitle: '💰 배당표', modalTitle: '숫자 선택', modalCancel: '취소',
+                legendInitial: '초기 공개', legendRevealed: '공개됨', legendRecommended: '추천',
+                bannerBest: '최적 선택 (완벽)', bannerEvLabel: '기대값',
+                previewTitle: '상세정보',
+                vsRiskyTitle: '최고 기대값', vsSafeTitle: '최고 보장',
+                vsRiskyLabel: '기대값', vsSafeLabel: '보장 획득',
+                vsWinLabel: '보장 초과 확률', vsSafeDesc: '잭팟 포기<br>확실한 보상',
+                riskWorth: '시도 가치 있음', riskMid: '중간 위험', riskHigh: '고위험'
+            },
+            'es': {
+                title: '🌵 Calculadora Mini Cactpot - v3',
+                subtitle: 'Haz clic en celdas para ingresar números, el sistema recomienda el mejor orden',
+                step0: 'Ini', step4: 'Elegir',
+                instructionHeader: '📋 Guía',
+                instructions: [
+                    'Paso 0: Ingresa número inicial<br>Haz clic en la celda revelada al inicio.',
+                    'Paso 1: Elige posición (quedan 3)<br>Recomienda <span class="text-highlight">celdas verdes</span> para mayor EV.',
+                    'Paso 2: Elige posición (quedan 2)<br>Recomienda <span class="text-highlight">celdas verdes</span> para mayor EV.',
+                    'Paso 3: Elige posición (queda 1)<br>Recomienda <span class="text-highlight">celdas verdes</span> para mayor EV.',
+                    '🎯 ¡Elige la mejor línea!<br>La línea roja es óptima.'
+                ],
+                lines: {
+                    'res-row0': 'Fila 1 (Arr)', 'res-row1': 'Fila 2 (Med)', 'res-row2': 'Fila 3 (Abj)',
+                    'res-col0': 'Col 1 (Izq)', 'res-col1': 'Col 2 (Cen)', 'res-col2': 'Col 3 (Der)',
+                    'res-diag0': 'Diagonal ↘', 'res-diag1': 'Diagonal ↙'
+                },
+                btnUndo: '↩ Deshacer', btnReset: '🔄 Reiniciar', btnResetPayout: 'Restablecer',
+                payoutTitle: '💰 Tabla de Pagos', modalTitle: 'Seleccionar', modalCancel: 'Cancelar',
+                legendInitial: 'Inicial', legendRevealed: 'Revelado', legendRecommended: 'Recomendado',
+                bannerBest: 'Mejor Opción (Perfecta)', bannerEvLabel: 'Valor Esperado',
+                previewTitle: 'Detalles',
+                vsRiskyTitle: 'Mejor EV', vsSafeTitle: 'Más Seguro',
+                vsRiskyLabel: 'Valor Esperado', vsSafeLabel: 'Garantizado',
+                vsWinLabel: 'Prob. Superar', vsSafeDesc: 'Sin jackpot<br>Seguro',
+                riskWorth: 'Vale intentar', riskMid: 'Riesgo medio', riskHigh: 'Alto riesgo'
+            },
+            'ru': {
+                title: '🌵 Калькулятор Мини Кактпот - v3',
+                subtitle: 'Нажмите на ячейки для ввода чисел, система порекомендует лучший порядок',
+                step0: 'Нач', step4: 'Выб',
+                instructionHeader: '📋 Руководство',
+                instructions: [
+                    'Шаг 0: Введите начальное число<br>Нажмите на открытую ячейку и введите число.',
+                    'Шаг 1: Выберите позицию (осталось 3)<br>Рекомендуется <span class="text-highlight">зелёные ячейки</span> для макс. EV.',
+                    'Шаг 2: Выберите позицию (осталось 2)<br>Рекомендуется <span class="text-highlight">зелёные ячейки</span> для макс. EV.',
+                    'Шаг 3: Выберите позицию (осталось 1)<br>Рекомендуется <span class="text-highlight">зелёные ячейки</span> для макс. EV.',
+                    '🎯 Выберите лучшую линию!<br>Красная линия — лучший выбор.'
+                ],
+                lines: {
+                    'res-row0': 'Ряд 1 (Верх)', 'res-row1': 'Ряд 2 (Сред)', 'res-row2': 'Ряд 3 (Низ)',
+                    'res-col0': 'Кол 1 (Лев)', 'res-col1': 'Кол 2 (Сред)', 'res-col2': 'Кол 3 (Прав)',
+                    'res-diag0': 'Диагональ ↘', 'res-diag1': 'Диагональ ↙'
+                },
+                btnUndo: '↩ Отмена', btnReset: '🔄 Сброс', btnResetPayout: 'По умолчанию',
+                payoutTitle: '💰 Таблица выплат', modalTitle: 'Выбор числа', modalCancel: 'Отмена',
+                legendInitial: 'Начальная', legendRevealed: 'Открыта', legendRecommended: 'Рекомендуется',
+                bannerBest: 'Лучший выбор (Идеал)', bannerEvLabel: 'Ожидаемое значение',
+                previewTitle: 'Подробности',
+                vsRiskyTitle: 'Лучший EV', vsSafeTitle: 'Безопасный',
+                vsRiskyLabel: 'Ожидаемое', vsSafeLabel: 'Гарантировано',
+                vsWinLabel: 'Шанс превысить', vsSafeDesc: 'Без джекпота<br>Надёжно',
+                riskWorth: 'Стоит попробовать', riskMid: 'Средний риск', riskHigh: 'Высокий риск'
+            }
+        };
+
+        let currentLang = 'zh-TW';
+
+        function setLang(lang) {
+            currentLang = lang;
+            localStorage.setItem('cactpot-lang', lang);
+            applyTranslations();
+            updateInstructions();
+            if (latestLineStats.length > 0) updateDisplay();
+        }
+
+        function applyTranslations() {
+            const t = i18n[currentLang];
+            document.getElementById('main-title').textContent = t.title;
+            document.getElementById('main-subtitle').textContent = t.subtitle;
+            document.title = t.title;
+            document.getElementById('step0').textContent = t.step0;
+            document.getElementById('step4').textContent = t.step4;
+            document.getElementById('instruction-header').textContent = t.instructionHeader;
+            document.getElementById('btn-undo').textContent = t.btnUndo;
+            document.getElementById('btn-reset').textContent = t.btnReset;
+            document.getElementById('btn-reset-payout').textContent = t.btnResetPayout;
+            document.getElementById('payout-title').textContent = t.payoutTitle;
+            document.getElementById('modal-title').textContent = t.modalTitle;
+            document.getElementById('legend-initial').textContent = t.legendInitial;
+            document.getElementById('legend-revealed').textContent = t.legendRevealed;
+            document.getElementById('legend-recommended').textContent = t.legendRecommended;
+            document.getElementById('banner-title-text').textContent = t.bannerBest;
+            document.getElementById('banner-ev-label').textContent = t.bannerEvLabel;
+            document.getElementById('preview-title').textContent = t.previewTitle;
+            document.getElementById('preview-ev-label').textContent = t.bannerEvLabel;
+            document.getElementById('vs-risky-title').textContent = t.vsRiskyTitle;
+            document.getElementById('vs-safe-title').textContent = t.vsSafeTitle;
+            document.getElementById('vs-risky-label').textContent = t.vsRiskyLabel;
+            document.getElementById('vs-safe-label').textContent = t.vsSafeLabel;
+            document.getElementById('vs-win-label').textContent = t.vsWinLabel;
+            document.getElementById('vs-safe-desc').innerHTML = t.vsSafeDesc;
+            lines.forEach(line => { line.name = t.lines[line.id]; });
+        }
+
+        // ==================== 原始程式碼 ====================
         const defaultPayouts = {
             6: 10000, 7: 36, 8: 720, 9: 360, 10: 80, 11: 252,
             12: 108, 13: 72, 14: 54, 15: 180, 16: 72, 17: 180,
@@ -602,6 +845,13 @@
         let latestLineStats = [];
 
         function init() {
+            // 載入儲存的語系
+            const savedLang = localStorage.getItem('cactpot-lang');
+            if (savedLang && i18n[savedLang]) {
+                currentLang = savedLang;
+                document.getElementById('lang-select').value = savedLang;
+            }
+            applyTranslations();
             initPayoutList();
             initHoverEvents(); 
             updateDisplay();
@@ -696,7 +946,7 @@
                 const disabled = usedNumbers.has(n) ? 'disabled' : '';
                 html += `<button class="number-btn" ${disabled} onclick="selectNumber(${n})">${n}</button>`;
             }
-            html += `<button class="number-btn cancel-btn" onclick="hideNumberModal()">取消</button>`;
+            html += `<button class="number-btn cancel-btn" onclick="hideNumberModal()">${i18n[currentLang].modalCancel}</button>`;
             options.innerHTML = html;
             modal.classList.add('show');
         }
@@ -765,15 +1015,7 @@
 
         function updateInstructions() {
             const textField = document.getElementById('instruction-text');
-            let html = '';
-            switch(currentStep) {
-                case 0: html = '步驟 0：輸入初始數字<br>請依照遊戲畫面，點擊輸入<span style="color:#df9f4a; font-weight:bold;">初始已揭露</span>的數字。'; break;
-                case 1: html = '步驟 1：選擇揭露位置 (剩餘 3 次)<br>推薦揭露 <span class="text-highlight">綠框格子</span>，有中間先選中間，Y字選法。'; break;
-                case 2: html = '步驟 2：選擇揭露位置 (剩餘 2 次)<br>推薦揭露 <span class="text-highlight">綠框格子</span>，Y字選法，通常可獲得最高期望值。'; break;
-                case 3: html = '步驟 3：選擇揭露位置 (剩餘 1 次)<br>推薦揭露 <span class="text-highlight">綠框格子</span>，做最後確認。'; break;
-                case 4: html = '最終選擇：決定連線<br>滑鼠移至各行列計算框上觀察 <span style="color:#ffd700; font-weight:bold;">期望值</span>。'; break;
-            }
-            textField.innerHTML = html;
+            textField.innerHTML = i18n[currentLang].instructions[currentStep] || '';
         }
 
         function calculateBestReveal() {
@@ -922,7 +1164,7 @@
             const banner = document.getElementById('best-choice-banner');
             banner.style.display = 'flex';
             
-            document.getElementById('banner-line-name').textContent = linesData.map(l => l.name).join(' 或 ');
+            document.getElementById('banner-line-name').textContent = linesData.map(l => l.name).join(' / ');
             document.getElementById('banner-ev-value').textContent = Math.round(linesData[0].ev).toLocaleString();
             updateProbabilityDisplay(linesData[0], 'banner-probs');
         }
@@ -951,14 +1193,15 @@
             document.getElementById('vs-win-rate').textContent = winRate.toFixed(0) + "%";
             
             const riskLabel = document.getElementById('vs-risk-label');
+            const t = i18n[currentLang];
             if (winRate >= 60) {
-                riskLabel.textContent = "值得一試";
+                riskLabel.textContent = t.riskWorth;
                 riskLabel.style.color = "#7fff7f";
             } else if (winRate >= 40) {
-                riskLabel.textContent = "風險適中";
+                riskLabel.textContent = t.riskMid;
                 riskLabel.style.color = "#ffd700";
             } else {
-                riskLabel.textContent = "高風險";
+                riskLabel.textContent = t.riskHigh;
                 riskLabel.style.color = "#ff6b6b";
             }
 
