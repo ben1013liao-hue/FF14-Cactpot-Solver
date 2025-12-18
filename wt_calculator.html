@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FF14 天書奇談機率計算器</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: '微軟正黑體', 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        h1 { margin: 0 0 5px 0; color: #d4af37; text-shadow: 2px 2px 4px #000; }
+        .subtitle { color: #aaa; margin-bottom: 20px; font-size: 0.9em; }
+
+        /* --- 版面配置 (Flex) --- */
+        .main-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 30px;
+            flex-wrap: wrap;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* --- 左側導覽列 (與仙人微彩一致) --- */
+        .nav-sidebar {
+            display: flex;
+            flex-direction: column;
+            width: 200px;
+            gap: 15px;
+            padding-top: 55px;
+            flex-shrink: 0;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: #2a2a4a;
+            color: #ccc;
+            text-decoration: none;
+            border-radius: 10px;
+            border: 1px solid #444;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .nav-item:hover {
+            background-color: #3a3a5c;
+            border-color: #d4af37;
+            color: #fff;
+            transform: translateX(5px);
+        }
+        .nav-item.active {
+            background: linear-gradient(135deg, #d4af37 0%, #aa8a2a 100%);
+            color: #000;
+            border-color: #fff;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+        .nav-icon { margin-right: 10px; font-size: 20px; width: 24px; text-align: center; }
+
+        /* --- 中央遊戲區 --- */
+        .game-area {
+            background-color: #2a2a4a;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            max-width: 500px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid #444;
+        }
+
+        .instructions {
+            font-size: 0.95em;
+            color: #ccc;
+            margin-bottom: 20px;
+            text-align: center;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        /* --- 格子樣式 (修正大小跳動問題) --- */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .cell {
+            /* 強制固定大小，防止被撐開 */
+            width: 70px;
+            height: 70px;
+            background-color: #3a3a5c;
+            border: 2px solid #555; /* 預設邊框寬度 */
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        .cell:hover { background-color: #4a4a6c; border-color: #888; }
+        
+        /* 激活狀態：只改變顏色與光暈，不改變 Box Model 大小 */
+        .cell.active {
+            background-color: #fdf5e6; 
+            border-color: #d4af37; /* 寬度保持 2px，只變色 */
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.6); /* 使用光暈增加視覺強調，不佔空間 */
+        }
+        .cell.active::after {
+            content: '★';
+            color: #d4af37;
+            font-size: 1.2em;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+        }
+
+        /* --- 控制按鈕 --- */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 0 10px;
+        }
+        .btn-reset { 
+            background-color: #c62828; color: white; border: none; 
+            padding: 8px 16px; border-radius: 5px; cursor: pointer; font-weight: bold; 
+            transition: all 0.2s;
+        }
+        .btn-reset:hover { background-color: #e53935; transform: scale(1.05); }
+
+        /* --- 結果面板 --- */
+        .results-panel {
+            width: 100%;
+            background-color: #222;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #777;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 1.1em;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+        }
+        .result-item:last-child { border-bottom: none; }
+        .percent { font-weight: bold; font-family: monospace; font-size: 1.2em; }
+        .chance-3 { color: #ffd700; }
+        .chance-2 { color: #c0c0c0; }
+        .chance-1 { color: #cd7f32; }
+
+        /* --- 建議區塊 --- */
+        .recommendation {
+            margin-top: 15px;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            border-radius: 8px;
+            width: 100%;
+            border: 2px solid transparent;
+        }
+        .rec-shuffle { background: rgba(198, 40, 40, 0.2); border-color: #c62828; color: #ff8a80; }
+        .rec-keep-gold { background: rgba(255, 215, 0, 0.15); border-color: #ffd700; color: #ffd700; box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); }
+        .rec-keep-silver { background: rgba(192, 192, 192, 0.15); border-color: #c0c0c0; color: #fff; }
+        .rec-wait { background-color: #444; color: #aaa; }
+
+        /* --- 右側資訊區 (新增需求 3) --- */
+        .info-sidebar {
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-top: 55px;
+        }
+        .info-card {
+            background-color: #2a2a4a;
+            border: 1px solid #444;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .info-title {
+            color: #d4af37;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: #ccc;
+        }
+        .stat-val { font-weight: bold; color: #fff; }
+        .desc-text { font-size: 0.85em; color: #888; margin-top: 5px; line-height: 1.4; }
+
+        /* 手機版 RWD */
+        @media (max-width: 900px) {
+            .nav-sidebar { 
+                width: 100%; flex-direction: row; padding-top: 0; margin-bottom: 10px; justify-content: center;
+            }
+            .nav-item { flex: 1; justify-content: center; }
+            .info-sidebar { width: 100%; padding-top: 0; }
+        }
+        @media (max-width: 400px) {
+            .cell { width: 60px; height: 60px; font-size: 1.5em; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        
+        <div class="nav-sidebar">
+            <h3 style="text-align:center; color:#888; margin:0 0 10px 0; font-size:14px;">工具列表</h3>
+            
+            <a href="index.html" class="nav-item">
+                <span class="nav-icon">🌵</span>
+                <span>仙人微彩</span>
+            </a>
+
+            <a href="#" class="nav-item active">
+                <span class="nav-icon">📖</span>
+                <span>天書奇談</span>
+            </a>
+        </div>
+
+        <div class="game-area">
+            <h1>天書奇談模擬器</h1>
+            <div class="subtitle">點擊格子放置貼紙，系統將計算剩餘機率</div>
+
+            <div class="instructions">
+                請依照遊戲中的位置點選，輸入目前的 7~9 個貼紙。
+            </div>
+
+            <div class="grid" id="grid">
+                </div>
+
+            <div class="controls">
+                <span id="sticker-count" style="font-weight:bold; color:#d4af37;">已貼: 0 / 9</span>
+                <button class="btn-reset" onclick="resetGrid()">重置盤面</button>
+            </div>
+
+            <div class="results-panel">
+                <div class="result-item chance-3">
+                    <span>3 條連線 (金獎):</span>
+                    <span class="percent" id="prob-3">0%</span>
+                </div>
+                <div class="result-item chance-2">
+                    <span>2 條連線 (銀獎):</span>
+                    <span class="percent" id="prob-2">0%</span>
+                </div>
+                <div class="result-item chance-1">
+                    <span>1 條連線 (銅獎):</span>
+                    <span class="percent" id="prob-1">0%</span>
+                </div>
+            </div>
+
+            <div id="recommendation" class="recommendation rec-wait">
+                請放置貼紙...
+            </div>
+        </div>
+
+        <div class="info-sidebar">
+            <div class="info-card">
+                <div class="info-title">📊 基礎機率參考</div>
+                <div class="desc-text" style="margin-bottom:15px;">
+                    這是從 0 開始隨機貼 9 個貼紙的數學理論機率 (C16取9)。
+                </div>
+                
+                <div class="stat-row">
+                    <span class="chance-3">★ 3 條連線</span>
+                    <span class="stat-val">0.21%</span>
+                </div>
+                <div class="desc-text">極低機率大獎 (約 1/476)。</div>
+                <hr style="border:0; border-top:1px solid #444; margin:10px 0;">
+
+                <div class="stat-row">
+                    <span class="chance-2">★ 2 條連線</span>
+                    <span class="stat-val">3.57%</span>
+                </div>
+                <div class="desc-text">通常指「剛好」2條線。</div>
+                <hr style="border:0; border-top:1px solid #444; margin:10px 0;">
+
+                <div class="stat-row">
+                    <span class="chance-1">★ 1 條連線</span>
+                    <span class="stat-val">32.31%</span>
+                </div>
+                <hr style="border:0; border-top:1px solid #444; margin:10px 0;">
+
+                <div class="stat-row">
+                    <span style="color:#888;">0 條連線</span>
+                    <span class="stat-val">63.92%</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // 初始化 4x4 網格狀態 (0: 空, 1: 有貼紙)
+        let gridState = new Array(16).fill(0);
+        
+        // 定義所有可能的連線 (索引)
+        const lines = [
+            [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15], // 橫線
+            [0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15], // 直線
+            [0, 5, 10, 15], [3, 6, 9, 12] // 對角線
+        ];
+
+        // 產生網格 UI
+        const gridElement = document.getElementById('grid');
+        for (let i = 0; i < 16; i++) {
+            let cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.dataset.index = i;
+            cell.onclick = () => toggleCell(i);
+            gridElement.appendChild(cell);
+        }
+
+        function toggleCell(index) {
+            const currentCount = gridState.filter(x => x === 1).length;
+            
+            if (gridState[index] === 0 && currentCount >= 9) {
+                return;
+            }
+
+            gridState[index] = gridState[index] === 0 ? 1 : 0;
+            renderGrid();
+            calculateProbabilities();
+        }
+
+        function resetGrid() {
+            gridState.fill(0);
+            renderGrid();
+            calculateProbabilities();
+        }
+
+        function renderGrid() {
+            const cells = document.querySelectorAll('.cell');
+            let count = 0;
+            cells.forEach((cell, i) => {
+                if (gridState[i] === 1) {
+                    cell.classList.add('active');
+                    count++;
+                } else {
+                    cell.classList.remove('active');
+                }
+            });
+            document.getElementById('sticker-count').innerText = `已貼: ${count} / 9`;
+        }
+
+        // 核心計算邏輯
+        function calculateProbabilities() {
+            const currentStickers = gridState.filter(x => x === 1).length;
+            const emptyIndices = gridState.map((val, idx) => val === 0 ? idx : -1).filter(idx => idx !== -1);
+            const remainingStickers = 9 - currentStickers;
+
+            let prob3 = 0, prob2 = 0, prob1 = 0;
+            let recText = "請放置貼紙...";
+            let recClass = "rec-wait";
+
+            // 超過 7 個貼紙，或者貼滿 9 個
+            if (currentStickers > 7) {
+                if (currentStickers === 9) {
+                    const linesCount = countLines(gridState);
+                    updateUI(linesCount >= 3 ? 100 : 0, linesCount >= 2 ? 100 : 0, linesCount >= 1 ? 100 : 0, "已完成", "rec-wait");
+                } else {
+                    updateUI(0, 0, 0, "無法洗牌 (已超過 7 張)", "rec-wait");
+                }
+                return;
+            }
+
+            // 少於 7 個貼紙
+            if (currentStickers < 7) {
+                updateUI(0, 0, 0, `請繼續貼至 7 個貼紙 (${7 - currentStickers} left)`, "rec-wait");
+                return;
+            }
+
+            // === 剛好 7 個貼紙：策略核心 ===
+            // 計算組合 (窮舉法) C(9, 2) = 36 種
+            const combinations = getCombinations(emptyIndices, remainingStickers);
+            const totalCombos = combinations.length;
+            
+            let count3 = 0, count2 = 0, count1 = 0;
+
+            combinations.forEach(combo => {
+                let tempGrid = [...gridState];
+                combo.forEach(idx => tempGrid[idx] = 1);
+                
+                let l = countLines(tempGrid);
+                if (l >= 3) count3++;
+                if (l >= 2) count2++; // 這裡的2線包含3線的情況
+                if (l >= 1) count1++;
+            });
+
+            prob3 = (count3 / totalCombos) * 100;
+            prob2 = (count2 / totalCombos) * 100; // 此機率包含3線
+            prob1 = (count1 / totalCombos) * 100;
+
+            // === 需求 4：優化後的建議邏輯 ===
+            // 邏輯說明：
+            // 1. 金獎優先：只要有 3 線機會 (prob3 > 0)，建議保留，因為 shuffle 代價低但 gold 價值極高。
+            // 2. 銀獎保底：如果 3 線無望 (prob3 == 0)，檢查 2 線機率。
+            //    - 如果 2 線機率高 (例如 > 40%)，建議保留拚銀獎。
+            //    - 如果 2 線機率低，建議洗牌。
+
+            if (prob3 > 0) {
+                recText = "✨ 建議保留！(有機率中金獎)";
+                recClass = "rec-keep-gold";
+            } else {
+                // 3 線機率為 0，看銀獎
+                // 設定閥值：40% 以上勝率算高，值得拚
+                if (prob2 >= 40) {
+                    recText = "✅ 建議保留 (穩拿銀獎)";
+                    recClass = "rec-keep-silver";
+                } else if (prob2 >= 15) {
+                    recText = "🤔 可考慮 (銀獎機率普通)";
+                    recClass = "rec-wait"; // 灰色中立建議
+                } else {
+                    recText = "🔄 建議洗牌 (爛盤面)";
+                    recClass = "rec-shuffle";
+                }
+            }
+
+            updateUI(prob3, prob2, prob1, recText, recClass);
+        }
+
+        function updateUI(p3, p2, p1, recText, recClass) {
+            document.getElementById('prob-3').innerText = formatPercent(p3);
+            document.getElementById('prob-2').innerText = formatPercent(p2);
+            document.getElementById('prob-1').innerText = formatPercent(p1);
+            
+            const recEl = document.getElementById('recommendation');
+            recEl.innerText = recText;
+            recEl.className = "recommendation " + recClass;
+        }
+
+        function formatPercent(num) {
+            if (num === 0) return "0%";
+            if (num === 100) return "100%";
+            return num.toFixed(2) + "%";
+        }
+
+        // 計算盤面有幾條線
+        function countLines(grid) {
+            let count = 0;
+            for (let line of lines) {
+                if (line.every(idx => grid[idx] === 1)) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        // 組合生成函數 C(n, k)
+        function getCombinations(array, k) {
+            let result = [];
+            function helper(start, combo) {
+                if (combo.length === k) {
+                    result.push([...combo]);
+                    return;
+                }
+                for (let i = start; i < array.length; i++) {
+                    combo.push(array[i]);
+                    helper(i + 1, combo);
+                    combo.pop();
+                }
+            }
+            helper(0, []);
+            return result;
+        }
+    </script>
+</body>
+</html>
