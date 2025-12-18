@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FF14 天書奇談機率計算器（銀賞特化版）</title>
+  <title>FF14 天書奇談機率計算器（EV疊加修正版）</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -92,7 +92,7 @@
       line-height: 1.45;
     }
 
-    /* 網格設定：固定大小避免跳動 */
+    /* 網格設定 */
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -116,7 +116,6 @@
     }
     .cell:hover { background-color: #4a4a6c; border-color: #888; }
     
-    /* 激活狀態：只改變顏色與陰影，不改變 Box Model */
     .cell.active {
       background-color: #fdf5e6;
       border-color: #d4af37;
@@ -169,7 +168,6 @@
     }
     .result-item:last-child { border-bottom: none; }
     
-    /* 強調 2 線 (主要目標) */
     .result-item.highlight-target {
       color: #fff;
       font-size: 1.2em;
@@ -183,9 +181,9 @@
     }
     
     .percent { font-family: monospace; font-size: 1.1em; }
-    .chance-3 { color: #ffd700; } /* 金 */
-    .chance-2 { color: #4a9fdf; text-shadow: 0 0 5px rgba(74, 159, 223, 0.5); } /* 銀 (亮藍色強調) */
-    .chance-1 { color: #cd7f32; } /* 銅 */
+    .chance-3 { color: #ffd700; }
+    .chance-2 { color: #4a9fdf; text-shadow: 0 0 5px rgba(74, 159, 223, 0.5); }
+    .chance-1 { color: #cd7f32; }
 
     .recommendation {
       margin-top: 14px;
@@ -197,12 +195,6 @@
       width: 100%;
       border: 2px solid transparent;
       line-height: 1.5;
-    }
-    /* 建議樣式 */
-    .rec-keep-gold { 
-      background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(0,0,0,0)); 
-      border-color: #ffd700; color: #ffd700; 
-      box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); 
     }
     .rec-keep-silver { 
       background: linear-gradient(135deg, rgba(74, 159, 223, 0.2), rgba(0,0,0,0)); 
@@ -252,10 +244,10 @@
     }
     .ev-formula strong { color: #fff; }
 
-    .stat-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9em; color: #ccc; }
-    .stat-val { font-weight: bold; color: #fff; }
+    .stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95em; color: #ccc; }
+    .stat-val { font-weight: bold; color: #fff; font-family: monospace; }
+    .desc-text { font-size: 0.85em; color: #888; line-height: 1.4; }
 
-    /* RWD */
     @media (max-width: 980px) {
       .nav-sidebar { width: 100%; flex-direction: row; padding-top: 0; margin-bottom: 10px; justify-content: center; }
       .nav-item { flex: 1; justify-content: center; }
@@ -287,7 +279,7 @@
       <div class="subtitle">銀賞（2條線）特化策略版</div>
 
       <div class="instructions">
-        請點選目前的 <strong>7</strong> 個貼紙位置。<br>系統將計算是否值得保留盤面（以銀賞為目標）。
+        請點選目前的 <strong>7</strong> 個貼紙位置。<br>系統將模擬所有後續可能，計算是否值得保留。
       </div>
 
       <div class="grid" id="grid"></div>
@@ -304,12 +296,12 @@
         </div>
 
         <div class="result-item highlight-target">
-          <span class="chance-2">★ 2 條連線 (銀)</span>
+          <span class="chance-2">★ 至少 2 線 (銀)</span>
           <span class="percent" id="prob-2">0%</span>
         </div>
 
         <div class="result-item">
-          <span class="chance-1">★ 1 條連線 (銅)</span>
+          <span class="chance-1">★ 至少 1 線 (銅)</span>
           <span class="percent" id="prob-1">0%</span>
         </div>
       </div>
@@ -320,7 +312,7 @@
     <div class="info-sidebar">
 
       <div class="info-card" style="border-color: #4a9fdf;">
-        <div class="info-title" style="color: #4a9fdf;">📈 策略期望值 (EV)</div>
+        <div class="info-title" style="color: #4a9fdf;">📈 銀賞策略期望值 (EV)</div>
         <div class="ev-head">
           <div class="ev-value" id="ev-value">—</div>
           <div style="text-align:right; font-size:0.8em; color:#888;">
@@ -330,35 +322,35 @@
         <div class="ev-hint" id="ev-hint">需剛好貼滿 7 張顯示建議</div>
 
         <div class="ev-formula">
-          <strong>權重設定：</strong><br>
-          金(100) / <span style="color:#4a9fdf; font-weight:bold;">銀(50)</span> / 銅(5)<br><br>
+          <strong>公式修正 (疊加制)：</strong><br>
+          EV = (金機率×155 + 銀機率×55 + 銅機率×5)<br>
+          <span style="font-size:0.8em; color:#666;">*假設權重：金100/銀50/銅5</span><br><br>
           <strong>判讀標準：</strong><br>
-          • EV ≥ 20：<span style="color:#7fff7f;">強烈建議保留</span> (約40%勝率)<br>
-          • EV ≥ 10：可考慮保留<br>
-          • EV < 10：建議洗牌
+          • EV ≥ 20：<span style="color:#7fff7f;">建議保留</span> (約30%勝率)<br>
+          • EV < 20：建議洗牌
         </div>
       </div>
 
       <div class="info-card">
-        <div class="info-title">📊 原始機率 (0開始)</div>
+        <div class="info-title">📊 理論機率 (剛好N線)</div>
+        <div class="desc-text" style="margin-bottom:10px;">
+          此為 16 取 9 的靜態數學分佈 (洗牌=完全隨機)。
+        </div>
         <div class="stat-row">
-          <span class="chance-3">3 線 (金)</span>
+          <span class="chance-3">3 條線</span>
           <span class="stat-val">0.21%</span>
         </div>
         <div class="stat-row">
-          <span class="chance-2">2 線 (銀)</span>
-          <span class="stat-val">3.57%</span>
+          <span class="chance-2">2 條線</span>
+          <span class="stat-val">10.35%</span>
         </div>
         <div class="stat-row">
-          <span class="chance-1">1 線 (銅)</span>
-          <span class="stat-val">32.31%</span>
+          <span class="chance-1">1 條線</span>
+          <span class="stat-val">47.90%</span>
         </div>
         <div class="stat-row">
-          <span>0 線</span>
-          <span class="stat-val">63.92%</span>
-        </div>
-        <div class="desc-text" style="margin-top:10px;">
-          註：右側機率為「完全隨機」的理論值。實際上透過洗牌策略，獲得銀賞的機率可大幅提升。
+          <span>0 條線</span>
+          <span class="stat-val">41.54%</span>
         </div>
       </div>
 
@@ -372,22 +364,22 @@
     const MAX_STICKERS = 9;
     const MIN_ANALYZE = 7;
 
-    // === 策略權重 (Silver Focus) ===
-    // 為了讓建議傾向於銀賞，我們將銀賞的權重從 20 提升到 50
-    // 這樣只要有 40% 的機率拿銀賞，EV 就會達到 20 (高分)
+    // === 策略權重 (Silver Focus + Cumulative) ===
+    // 因為現在的計算方式改為「疊加」，所以權重數值微調以符合直覺
+    // 金 = 100, 銀 = 50, 銅 = 5
+    // 3條線總分 = 155
+    // 2條線總分 = 55
+    // 1條線總分 = 5
     const REWARD = { gold: 100, silver: 50, bronze: 5 };
 
-    // 初始化網格
     let gridState = new Array(GRID_SIZE).fill(0);
 
-    // 連線定義
     const lines = [
       [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15],
       [0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15],
       [0, 5, 10, 15], [3, 6, 9, 12]
     ];
 
-    // 產生網格 UI
     const gridElement = document.getElementById('grid');
     for (let i = 0; i < GRID_SIZE; i++) {
       const cell = document.createElement('div');
@@ -400,7 +392,6 @@
     function toggleCell(index) {
       const currentCount = gridState.filter(x => x === 1).length;
       if (gridState[index] === 0 && currentCount >= MAX_STICKERS) return;
-
       gridState[index] = gridState[index] === 0 ? 1 : 0;
       renderGrid();
       calculate();
@@ -459,53 +450,49 @@
 
     function setRecommendation(text, cls) {
       const el = document.getElementById('recommendation');
-      el.innerHTML = text; // allow html for formatting
+      el.innerHTML = text;
       el.className = `recommendation ${cls}`;
     }
 
     function calculate() {
       const currentStickers = gridState.filter(x => x === 1).length;
 
-      // 預設值
       let prob3 = 0, prob2 = 0, prob1 = 0;
       let evText = '—';
       let evHint = '請貼滿 7 張';
 
-      // 1. 貼紙不足 7 張
+      // 1. 不足 7 張
       if (currentStickers < MIN_ANALYZE) {
         setRecommendation(`請繼續貼至 7 個貼紙<br><span style="font-size:0.8em; font-weight:normal">(還差 ${MIN_ANALYZE - currentStickers} 張)</span>`, 'rec-wait');
         updatePanels(0, 0, 0, evText, evHint);
         return;
       }
 
-      // 2. 貼紙超過 7 張 (無法洗牌)
+      // 2. 超過 7 張
       if (currentStickers > MIN_ANALYZE) {
         const l = countLines(gridState);
         prob3 = l >= 3 ? 100 : 0;
         prob2 = l >= 2 ? 100 : 0;
         prob1 = l >= 1 ? 100 : 0;
-        evText = 'N/A';
-        evHint = '已超過可洗牌階段';
         
-        let finalText = "已完成";
+        let finalText = "下次再接再厲";
         if (l >= 3) finalText = "🎉 恭喜獲得金賞！";
         else if (l >= 2) finalText = "🎉 恭喜獲得銀賞！";
         else if (l >= 1) finalText = "獲得銅賞";
-        else finalText = "下次再接再厲";
 
         setRecommendation(finalText, 'rec-wait');
-        updatePanels(prob3, prob2, prob1, evText, evHint);
+        updatePanels(prob3, prob2, prob1, 'N/A', '已超過可洗牌階段');
         return;
       }
 
-      // 3. 剛好 7 張：進行決策分析
+      // 3. 剛好 7 張
       const emptyIndices = gridState.map((val, idx) => val === 0 ? idx : -1).filter(idx => idx !== -1);
-      const remainingStickers = MAX_STICKERS - currentStickers; // 應該是 2
+      const remainingStickers = MAX_STICKERS - currentStickers; 
       const combinations = getCombinations(emptyIndices, remainingStickers);
       const comboTotal = combinations.length;
 
       let count3 = 0, count2plus = 0, count1plus = 0;
-      let nGold = 0, nSilver = 0, nBronze = 0;
+      let totalEvPoints = 0;
 
       for (const combo of combinations) {
         const tempGrid = [...gridState];
@@ -513,49 +500,49 @@
 
         const l = countLines(tempGrid);
         
-        // 統計機率 (Cumulative)
+        // 統計獲獎機率 (At least)
         if (l >= 3) count3++;
         if (l >= 2) count2plus++;
         if (l >= 1) count1plus++;
 
-        // 統計 EV (Weighted)
-        // 這裡做個簡化：拿了金賞通常也包含銀賞獎勵，但為了 EV 計算不重複疊加，我們取最高獎項
-        if (l >= 3) nGold++;
-        else if (l >= 2) nSilver++;
-        else if (l >= 1) nBronze++;
+        // 統計 EV (疊加制 Cumulative)
+        // 3線 = 金+銀+銅, 2線 = 銀+銅, 1線 = 銅
+        let currentScore = 0;
+        if (l >= 1) currentScore += REWARD.bronze;
+        if (l >= 2) currentScore += REWARD.silver;
+        if (l >= 3) currentScore += REWARD.gold;
+        
+        totalEvPoints += currentScore;
       }
 
       prob3 = (count3 / comboTotal) * 100;
       prob2 = (count2plus / comboTotal) * 100;
       prob1 = (count1plus / comboTotal) * 100;
 
-      // EV 計算
-      const evRaw = (nGold * REWARD.gold + nSilver * REWARD.silver + nBronze * REWARD.bronze) / comboTotal;
+      const evRaw = totalEvPoints / comboTotal;
       evText = evRaw.toFixed(1);
 
-      // === 決策邏輯 (Silver Focus) ===
-      // 門檻設定：
-      // 如果 EV >= 20 (相當於有 40% 機率拿銀賞，或者極低機率拿金賞加持)，則保留
-      // 如果 EV >= 10 (相當於 20% 機率拿銀賞)，則考慮
+      // === 決策邏輯 (EV Thresholds) ===
+      // 雙聽牌 (41.67% 2線): EV ≈ 0.42 * 55 + 0.58 * 5 ≈ 23 + 2.9 = 25.9
+      // 單聽牌+運氣 (約10-15% 2線): EV ≈ 0.15 * 55 + 0.85 * 5 ≈ 8.25 + 4.25 = 12.5
+      // 0聽牌 (2.7% 2線): EV ≈ 0.027 * 55 + 0.97 * 5 ≈ 1.5 + 4.8 = 6.3
       
       let recText = "";
       let recClass = "";
+      const goldText = prob3 > 0 ? "<br><span style='font-size:0.8em; color:#ffd700'>✨ 有金賞機會</span>" : "";
 
-      // 特殊情況：如果有金賞機會，無論如何都標註
-      const goldText = prob3 > 0 ? "<br><span style='font-size:0.8em; color:#ffd700'>✨ 潛在金賞機會</span>" : "";
-
-      if (evRaw >= 18) { // 約 36% 銀賞勝率
+      if (evRaw >= 20) {
         recText = `✅ 建議保留！${goldText}`;
-        recClass = "rec-keep-silver"; // 用藍色強調銀賞
-        evHint = "期望值高，銀賞勝率佳";
-      } else if (evRaw >= 9) { // 約 18% 銀賞勝率
+        recClass = "rec-keep-silver";
+        evHint = "EV高於20，銀賞機率佳";
+      } else if (evRaw >= 10) {
         recText = `🤔 可考慮保留${goldText}`;
         recClass = "rec-wait"; 
-        evHint = "期望值中等，視點數決定";
+        evHint = "EV介於10-20，風險中等";
       } else {
         recText = "🔄 建議洗牌";
         recClass = "rec-shuffle";
-        evHint = "獲獎機率過低";
+        evHint = "EV過低，建議重來";
       }
 
       setRecommendation(recText, recClass);
@@ -570,7 +557,6 @@
       document.getElementById('ev-hint').innerText = hint;
     }
 
-    // 啟動渲染
     renderGrid();
     calculate();
   </script>
