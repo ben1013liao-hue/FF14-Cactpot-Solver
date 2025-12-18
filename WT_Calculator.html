@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FF14 天書奇談機率計算器</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #2b2b2b;
+            color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        h1 { margin-bottom: 10px; color: #ffd700; }
+        .container {
+            background-color: #3c3c3c;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            max-width: 500px;
+            width: 100%;
+        }
+        .instructions {
+            font-size: 0.9em;
+            color: #ccc;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+            aspect-ratio: 1; /* 保持正方形 */
+        }
+        .cell {
+            background-color: #555;
+            border: 2px solid #777;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .cell:hover { background-color: #666; }
+        .cell.active {
+            background-color: #fdf5e6; /* 貼紙底色 */
+            border-color: #d4af37;
+            box-shadow: 0 0 10px #d4af37;
+        }
+        /* 模擬貼紙圖案 */
+        .cell.active::after {
+            content: '★';
+            color: #d4af37;
+            font-size: 1.5em;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+        }
+        .btn-reset { background-color: #c62828; color: white; }
+        .btn-reset:hover { background-color: #b71c1c; }
+        
+        .results {
+            background-color: #222;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 5px solid #777;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 1.1em;
+        }
+        .percent { font-weight: bold; }
+        .chance-3 { color: #ffd700; } /* 金 */
+        .chance-2 { color: #c0c0c0; } /* 銀 */
+        .chance-1 { color: #cd7f32; } /* 銅 */
+        
+        .recommendation {
+            margin-top: 15px;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            border-radius: 5px;
+        }
+        .rec-shuffle { background-color: #c62828; color: white; }
+        .rec-keep { background-color: #2e7d32; color: white; }
+        .rec-wait { background-color: #555; color: #ccc; }
+
+        @media (max-width: 400px) {
+            .cell { font-size: 1.5em; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>天書奇談模擬器</h1>
+
+    <div class="container">
+        <div class="instructions">
+            點擊格子以放置/移除貼紙。<br>系統將自動計算貼滿 9 個後的連線機率。
+        </div>
+
+        <div class="grid" id="grid">
+            </div>
+
+        <div class="controls">
+            <span id="sticker-count">已貼: 0 / 9</span>
+            <button class="btn-reset" onclick="resetGrid()">重置盤面</button>
+        </div>
+
+        <div class="results" id="results-panel">
+            <div class="result-item chance-3">
+                <span>3 條連線 (金獎):</span>
+                <span class="percent" id="prob-3">0%</span>
+            </div>
+            <div class="result-item chance-2">
+                <span>2 條連線 (銀獎):</span>
+                <span class="percent" id="prob-2">0%</span>
+            </div>
+            <div class="result-item chance-1">
+                <span>1 條連線 (銅獎):</span>
+                <span class="percent" id="prob-1">0%</span>
+            </div>
+        </div>
+
+        <div id="recommendation" class="recommendation rec-wait">
+            請放置貼紙...
+        </div>
+    </div>
+
+    <script>
+        // 初始化 4x4 網格狀態 (0: 空, 1: 有貼紙)
+        let gridState = new Array(16).fill(0);
+        
+        // 定義所有可能的連線 (索引)
+        const lines = [
+            [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15], // 橫線
+            [0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15], // 直線
+            [0, 5, 10, 15], [3, 6, 9, 12] // 對角線
+        ];
+
+        // 產生網格 UI
+        const gridElement = document.getElementById('grid');
+        for (let i = 0; i < 16; i++) {
+            let cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.dataset.index = i;
+            cell.onclick = () => toggleCell(i);
+            gridElement.appendChild(cell);
+        }
+
+        function toggleCell(index) {
+            const currentCount = gridState.filter(x => x === 1).length;
+            
+            // 如果要增加貼紙，但已經滿9個，則不允許
+            if (gridState[index] === 0 && currentCount >= 9) {
+                return;
+            }
+
+            gridState[index] = gridState[index] === 0 ? 1 : 0;
+            renderGrid();
+            calculateProbabilities();
+        }
+
+        function resetGrid() {
+            gridState.fill(0);
+            renderGrid();
+            calculateProbabilities();
+        }
+
+        function renderGrid() {
+            const cells = document.querySelectorAll('.cell');
+            let count = 0;
+            cells.forEach((cell, i) => {
+                if (gridState[i] === 1) {
+                    cell.classList.add('active');
+                    count++;
+                } else {
+                    cell.classList.remove('active');
+                }
+            });
+            document.getElementById('sticker-count').innerText = `已貼: ${count} / 9`;
+        }
+
+        // 核心計算邏輯
+        function calculateProbabilities() {
+            const currentStickers = gridState.filter(x => x === 1).length;
+            const emptyIndices = gridState.map((val, idx) => val === 0 ? idx : -1).filter(idx => idx !== -1);
+            const remainingStickers = 9 - currentStickers;
+
+            // 顯示變數
+            let prob3 = 0, prob2 = 0, prob1 = 0;
+            let recText = "";
+            let recClass = "rec-wait";
+
+            if (remainingStickers < 0) {
+                // 理論上不會發生，因為有擋
+                updateUI(0, 0, 0, "錯誤：貼紙過多", "rec-wait");
+                return;
+            }
+
+            if (remainingStickers === 0) {
+                // 已經貼滿 9 個，直接算結果
+                const linesCount = countLines(gridState);
+                prob3 = linesCount >= 3 ? 100 : 0;
+                prob2 = linesCount >= 2 ? 100 : 0; // 含3線
+                prob1 = linesCount >= 1 ? 100 : 0; // 含2,3線
+                
+                updateUI(prob3, prob2, prob1, "已完成", "rec-wait");
+                return;
+            }
+
+            // 計算組合 (窮舉法)
+            // 從 emptyIndices 中取 remainingStickers 個位置的所有組合
+            const combinations = getCombinations(emptyIndices, remainingStickers);
+            const totalCombos = combinations.length;
+            
+            let count3 = 0, count2 = 0, count1 = 0;
+
+            combinations.forEach(combo => {
+                // 建立暫時盤面
+                let tempGrid = [...gridState];
+                combo.forEach(idx => tempGrid[idx] = 1);
+                
+                let l = countLines(tempGrid);
+                if (l >= 3) count3++;
+                if (l >= 2) count2++;
+                if (l >= 1) count1++;
+            });
+
+            prob3 = (count3 / totalCombos) * 100;
+            prob2 = (count2 / totalCombos) * 100;
+            prob1 = (count1 / totalCombos) * 100;
+
+            // 產生建議
+            if (currentStickers === 7) {
+                if (prob3 > 0) {
+                    recText = "建議：保留 (KEEP)！有機會拼金獎";
+                    recClass = "rec-keep";
+                } else if (prob3 === 0 && prob2 > 0) {
+                    // 根據進階策略，7貼紙若無3線機會通常建議洗掉，除非只想保銀
+                    recText = "建議：洗牌 (SHUFFLE)！無法達成3線";
+                    recClass = "rec-shuffle";
+                } else {
+                    recText = "建議：洗牌 (SHUFFLE)！爛盤面";
+                    recClass = "rec-shuffle";
+                }
+            } else if (currentStickers < 7) {
+                recText = "請繼續貼至 7 個貼紙後再判斷";
+                recClass = "rec-wait";
+            } else {
+                recText = "超過 7 個貼紙，無法洗牌";
+                recClass = "rec-wait";
+            }
+
+            updateUI(prob3, prob2, prob1, recText, recClass);
+        }
+
+        function updateUI(p3, p2, p1, recText, recClass) {
+            document.getElementById('prob-3').innerText = p3 % 1 === 0 ? p3 + "%" : p3.toFixed(2) + "%";
+            document.getElementById('prob-2').innerText = p2 % 1 === 0 ? p2 + "%" : p2.toFixed(2) + "%";
+            document.getElementById('prob-1').innerText = p1 % 1 === 0 ? p1 + "%" : p1.toFixed(2) + "%";
+            
+            const recEl = document.getElementById('recommendation');
+            recEl.innerText = recText;
+            recEl.className = "recommendation " + recClass;
+        }
+
+        // 計算盤面有幾條線
+        function countLines(grid) {
+            let count = 0;
+            for (let line of lines) {
+                if (line.every(idx => grid[idx] === 1)) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        // 組合生成函數 C(n, k)
+        function getCombinations(array, k) {
+            let result = [];
+            function helper(start, combo) {
+                if (combo.length === k) {
+                    result.push([...combo]);
+                    return;
+                }
+                for (let i = start; i < array.length; i++) {
+                    combo.push(array[i]);
+                    helper(i + 1, combo);
+                    combo.pop();
+                }
+            }
+            helper(0, []);
+            return result;
+        }
+    </script>
+</body>
+</html>
