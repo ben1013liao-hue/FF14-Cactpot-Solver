@@ -452,6 +452,66 @@
             background: #2a2a4a;
             color: #fff;
         }
+/* --- 新增：左側導覽列樣式 --- */
+        .nav-sidebar {
+            display: flex;
+            flex-direction: column;
+            width: 200px; /* 固定寬度 */
+            gap: 15px;    /* 按鈕間距 */
+            padding-top: 55px; /* 與右側資訊區對齊高度 */
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: #2a2a4a;
+            color: #ccc;
+            text-decoration: none; /* 去除底線 */
+            border-radius: 10px;
+            border: 1px solid #444;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item:hover {
+            background-color: #3a3a5c;
+            border-color: #d4af37;
+            color: #fff;
+            transform: translateX(5px); /* 滑鼠移上去微動特效 */
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, #d4af37 0%, #aa8a2a 100%);
+            color: #000;
+            border-color: #fff;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            margin-right: 10px;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* 手機版響應式調整 */
+        @media (max-width: 900px) {
+            .nav-sidebar {
+                width: 100%; /* 手機版變全寬 */
+                flex-direction: row; /* 變成橫向排列 */
+                padding-top: 0;
+                margin-bottom: 20px;
+                justify-content: center;
+            }
+            .nav-item {
+                flex: 1;
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -468,10 +528,28 @@
         </select>
     </div>
 
-    <h1 id="main-title">🌵 仙人微彩計算器 - v3</h1>
+<h1 id="main-title">🌵 仙人微彩計算器 - v3</h1>
     <p class="subtitle" id="main-subtitle">點擊格子輸入數字，系統會自動推薦最佳揭露順序</p>
 
     <div class="main-container">
+        
+        <div class="nav-sidebar">
+            <h3 style="text-align:center; color:#888; margin:0 0 10px 0; font-size:14px;">工具列表</h3>
+            
+            <a href="#" class="nav-item active">
+                <span class="nav-icon">🌵</span>
+                <span>仙人微彩</span>
+            </a>
+
+            <a href="wt_calculator.html" class="nav-item">
+                <span class="nav-icon">📖</span>
+                <span>天書奇談</span>
+            </a>
+
+            </div>
+        <div class="game-area">
+            <div class="step-indicator">
+            ...
         <div class="game-area">
             <div class="step-indicator">
                 <div class="step" id="step0">初</div>
